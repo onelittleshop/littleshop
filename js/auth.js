@@ -5,6 +5,28 @@ async function oauthLogin(provider) {
   if (error) alert('OAuth 登入錯誤：' + error.message);
 }
 
+async function loadUserProfile(userId) {
+  if (!sb) return;
+  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+  if (data) {
+    currentUser = {
+      id: userId,
+      nickname: data.nickname,
+      phone: data.phone,
+      avatar_url: data.avatar_url,
+      isAdmin: currentUser?.isAdmin || false
+    };
+    if (!data.nickname) {
+      openProfileModal(true);
+    }
+  } else {
+    // 首次登入無 profile 紀錄，引導填寫
+    currentUser = { id: userId, nickname: '', phone: '', avatar_url: '', isAdmin: false };
+    openProfileModal(true);
+  }
+  updateAuthUI();
+}
+
 function previewAndCompressAvatar(event) {
   const file = event.target.files[0];
   if (!file) return;
