@@ -180,7 +180,7 @@
   <div id="statsModal" onclick="if(event.target === this) document.getElementById('statsModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-sm w-full p-6 shadow-2xl modal-enter flex flex-col max-h-[85vh]">
       <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-        <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-chart-pie text-amber-500 mr-2"></i>主頁流量與設備統計</h3>
+        <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-chart-pie text-amber-500 mr-2"></i>歷年流量與設備統計</h3>
         <button onclick="document.getElementById('statsModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div id="statsListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 text-sm no-scrollbar">
@@ -309,7 +309,7 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 9：官方上架 Modal (含隱藏式細分類)] ==================== -->
+  <!-- ==================== [模塊 9：官方上架 Modal (含隱藏式細分類與展開式交收選項)] ==================== -->
   <div id="uploadModal" onclick="if(event.target === this) closeUploadModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-6 shadow-xl modal-enter my-8 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
@@ -433,8 +433,9 @@
         
         <div class="p-5 bg-white border-t border-slate-100 flex-1">
           <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+            <!-- 動態顯示 雙層分類標籤 -->
             <span id="detailCat" class="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded"></span>
-            <span><i class="fa-solid fa-location-dot mr-1"></i><span id="detailLocation"></span></span>
+            <span class="font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded"><i class="fa-solid fa-location-dot text-amber-500 mr-1"></i><span id="detailLocation"></span></span>
           </div>
           <h2 id="detailTitle" class="text-lg font-bold text-slate-900"></h2>
           <p id="detailDesc" class="text-xs text-slate-600 mt-2 whitespace-pre-line"></p>
@@ -535,7 +536,7 @@
       datalist.innerHTML = siteCategories.map(cat => `<option value="${cat}">`).join('');
     }
 
-    /* ==================== [子模塊：全站日誌追蹤與統計 (已升級)] ==================== */
+    /* ==================== [子模塊：全站日誌追蹤與統計] ==================== */
     function getDeviceType() {
       const ua = navigator.userAgent;
       if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'tablet';
@@ -543,7 +544,6 @@
       return 'desktop';
     }
 
-    // 核心日誌發送函數，任何事件皆會記錄
     async function logActivity(pageType, targetId = null) {
       if (!sb) return;
       const uId = currentUser ? currentUser.id : null;
@@ -559,12 +559,10 @@
       });
     }
 
-    // 管理員橫幅更新 (自動轉香港時間)
     async function updateAdminStatsUI() {
       if (!sb || !currentUser?.isAdmin) return;
       const { data, error } = await sb.rpc('get_admin_daily_stats');
       if (data && data.length > 0) {
-        // 利用 JS 取得香港今日日期字串
         const todayHk = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Hong_Kong"})).toISOString().split('T')[0];
         const todayData = data.find(d => d.log_date === todayHk) || {total_visits: 0, mobile_visits: 0, tablet_visits: 0, desktop_visits: 0};
         
@@ -573,7 +571,6 @@
       }
     }
 
-    // 開啟歷年日誌統計面板
     async function openStatsModal() {
       if (!currentUser?.isAdmin) return;
       document.getElementById('statsModal').classList.remove('hidden');
@@ -615,7 +612,6 @@
     async function initApp() {
       if (!isConfigured) return;
       
-      // 網頁載入即視為訪問主頁
       await logActivity('home');
       await fetchCategories(); 
 
@@ -852,7 +848,6 @@
     }
     function closeAdminMsgModal() { document.getElementById('adminMsgModal').classList.add('hidden'); }
     
-    // 開啟訊息中心順便紀錄日誌
     async function openMessagesModal() {
       await logActivity('messages');
       document.getElementById('messagesModal').classList.remove('hidden');
@@ -1071,6 +1066,11 @@
         const nextMinBid = item.bids.length === 0 ? item.startPrice : item.currentPrice + item.bidIncrement;
         const hiddenStyle = !item.is_visible ? 'opacity-60 grayscale-[50%] border-dashed' : 'border-slate-200';
 
+        let cleanLocation = item.location || '面交, 葵興地鐵站';
+        if (cleanLocation.includes('(') && cleanLocation.includes(')')) {
+           cleanLocation = cleanLocation.replace(' (', ' · ').replace(')', '');
+        }
+
         if (currentLayout === 'list') {
           let listBtnHtml = '';
           if (cd.ended) {
@@ -1089,20 +1089,24 @@
             </div>`;
 
           return `
-            <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-xl border ${isLeading ? 'border-amber-400 ring-2 ring-amber-400/20' : hiddenStyle} overflow-hidden shadow-sm hover:shadow-md transition flex cursor-pointer group relative h-28">
-              <div class="w-28 shrink-0 relative bg-slate-100 overflow-hidden border-r border-slate-100">
+            <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-xl border ${isLeading ? 'border-amber-400 ring-2 ring-amber-400/20' : hiddenStyle} overflow-hidden shadow-sm hover:shadow-md transition flex cursor-pointer group relative h-[132px]">
+              <div class="w-[125px] shrink-0 relative bg-slate-100 overflow-hidden border-r border-slate-100">
                 ${badgeListHtml}
                 <img src="${item.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition ${cd.ended ? 'opacity-65 grayscale-[30%]' : ''}">
               </div>
               <div class="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
                 <div>
                   <h3 class="font-bold text-slate-800 text-[13px] sm:text-sm line-clamp-1 mb-1">${item.title}</h3>
-                  <div class="flex items-center justify-between text-slate-500 text-[10px]">
+                  <!-- 醒目顯示交收地點標籤 -->
+                  <div class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 mb-1">
+                    <i class="fa-solid fa-location-dot text-amber-500 mr-1"></i>${cleanLocation}
+                  </div>
+                  <div class="flex items-center justify-between text-slate-400 text-[10px]">
                     <span>底價 $${item.startPrice}</span>
                     <span>每口 +$${item.bidIncrement}</span>
                   </div>
                 </div>
-                <div class="flex items-end justify-between mt-1 border-t border-slate-50 pt-1.5">
+                <div class="flex items-end justify-between border-t border-slate-100 pt-1.5">
                   <div>
                     <div class="text-[10px] text-slate-400 mb-0.5 leading-none">目前最高</div>
                     <div class="text-base sm:text-lg font-extrabold text-amber-600 leading-none">HK$ ${item.currentPrice}</div>
@@ -1146,7 +1150,12 @@
               <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
                 <div>
                   <h3 class="font-bold text-slate-800 text-xs sm:text-sm mb-1.5 line-clamp-2">${item.title}</h3>
-                  <div class="bg-slate-50 rounded-xl p-2 border border-slate-100 mb-2">
+                  <!-- 網格模式：醒目顯示交收地點標籤，無需點開即見 -->
+                  <div class="flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-amber-50/90 text-amber-900 border border-amber-200/60 mb-2 truncate">
+                    <i class="fa-solid fa-location-dot text-amber-500 mr-1.5 shrink-0"></i>
+                    <span class="truncate">${cleanLocation}</span>
+                  </div>
+                  <div class="bg-slate-50 rounded-xl p-2 border border-slate-100 mb-2.5">
                     <div class="flex justify-between text-[10px] text-slate-400">
                       <span>${item.bids.length > 0 ? '目前最高' : '底價'}</span>
                       <span>每口 +$${item.bidIncrement}</span>
@@ -1167,10 +1176,8 @@
     async function openDetailModal(id) {
       activeDetailAuctionId = id;
       
-      // 開啟時，記錄日誌 (將會觸發資料庫自動增加 view_count)
       await logActivity('item_detail', id);
       
-      // 更新本機數值以即時顯示
       const item = auctions.find(a => a.id === id);
       if (item) item.view_count = (item.view_count || 0) + 1;
       
@@ -1270,7 +1277,13 @@
 
       const categoryDisplay = item.subCategory ? `${item.category} <i class="fa-solid fa-chevron-right text-[8px] mx-1"></i> ${item.subCategory}` : item.category;
       document.getElementById('detailCat').innerHTML = categoryDisplay;
-      document.getElementById('detailLocation').textContent = item.location;
+      
+      let cleanLocation = item.location;
+      if (cleanLocation && cleanLocation.includes('(') && cleanLocation.includes(')')) {
+         cleanLocation = cleanLocation.replace(' (', ' · ').replace(')', '');
+      }
+      document.getElementById('detailLocation').textContent = cleanLocation;
+      
       document.getElementById('detailTitle').textContent = item.title;
       document.getElementById('detailDesc').textContent = item.desc;
       document.getElementById('detailStartPrice').textContent = item.startPrice;
