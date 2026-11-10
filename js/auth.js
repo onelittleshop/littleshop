@@ -5,6 +5,23 @@ async function oauthLogin(provider) {
   if (error) alert('OAuth 登入錯誤：' + error.message);
 }
 
+// ==================== [擴充：Meta / IG 登入處理] ====================
+async function metaLogin() {
+  if (!sb) return alert('請先填入 Supabase 憑證');
+  
+  // 透過 Supabase Auth 觸發 Facebook (Meta/IG 體系) OAuth 授權
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: { 
+      redirectTo: window.location.origin + window.location.pathname 
+    }
+  });
+  
+  if (error) {
+    alert('Meta 登入錯誤：' + error.message);
+  }
+}
+
 async function emailQuickAuth(e) {
   e.preventDefault();
   if (!sb) return alert('請先填入 Supabase 憑證');
