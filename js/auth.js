@@ -1,3 +1,4 @@
+
 // ==================== [模塊：Auth & User Profile] ====================
 async function oauthLogin(provider) {
   if (!sb) return alert('請先填入 Supabase 憑證');
@@ -7,24 +8,36 @@ async function oauthLogin(provider) {
 
 async function loadUserProfile(userId) {
   if (!sb) return;
-  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
-  if (data) {
-    currentUser = {
-      id: userId,
-      nickname: data.nickname,
-      phone: data.phone,
-      avatar_url: data.avatar_url,
-      isAdmin: currentUser?.isAdmin || false
-    };
-    if (!data.nickname) {
+  // Ensure userId is a string primitive, not an object or event
+  let uid = userId;
+  if (typeof uid === 'object' && uid !== null) {
+    uid = uid.id || uid.user?.id || '';
+  }
+  if (!uid || typeof uid !== 'string') return;
+
+  try {
+    const { data, error } = await sb.from('profiles').select('*').eq('id', uid).single();
+    if (data) {
+      currentUser = {
+        id: uid,
+        nickname: data.nickname || '',
+        phone: data.phone || '',
+        avatar_url: data.avatar_url || '',
+        isAdmin: currentUser?.isAdmin || false
+      };
+      if (!data.nickname) {
+        openProfileModal(true);
+      }
+    } else {
+      currentUser = { id: uid, nickname: '', phone: '', avatar_url: '', isAdmin: false };
       openProfileModal(true);
     }
-  } else {
-    // 首次登入無 profile 紀錄，引導填寫
-    currentUser = { id: userId, nickname: '', phone: '', avatar_url: '', isAdmin: false };
+  } catch (err) {
+    console.warn('載入 Profile 發生異常:', err);
+    currentUser = { id: uid, nickname: '', phone: '', avatar_url: '', isAdmin: false };
     openProfileModal(true);
   }
-  updateAuthUI();
+  if (typeof updateAuthUI === 'function') updateAuthUI();
 }
 
 function previewAndCompressAvatar(event) {
@@ -129,7 +142,7 @@ function updateAuthUI() {
 }
 
 async function fetchUserMessages() {
-  if (!currentUser || !sb) return;
+  if (!currentUser || !currentUser.id || !sb) return;
   const { data } = await sb.from('messages').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
   userMessages = data || [];
   const unreadCount = userMessages.filter(m => !m.is_read).length;

@@ -1,87 +1,62 @@
-// ==================== [模塊：Analytics & Activity Logs] ====================
-function getDeviceType() {
-  const ua = navigator.userAgent;
-  if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'tablet';
-  if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return 'mobile';
-  return 'desktop';
-}
 
-async function logActivity(pageType, targetId = null) {
+// ==================== [模塊：Analytics] ====================
+async function logActivity(actionType) {
   if (!sb) return;
-  const uId = currentUser ? currentUser.id : null;
-  const gSession = getGuestSession();
-  const dType = getDeviceType();
-  
-  await sb.rpc('log_activity', {
-    p_user_id: uId,
-    p_guest_session: gSession,
-    p_device_type: dType,
-    p_page_type: pageType,
-    p_target_id: targetId
-  });
-}
+  try {
+    const ua = navigator.userAgent;
+    let device = 'Desktop';
+    if (/mobile/i.test(ua)) device = 'Mobile';
+    else if (/ipad|tablet/i.test(ua)) device = 'Tablet';
 
-async function trackDailyVisit() {
-  if (!sb) return;
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const deviceType = getDeviceType();
-  
-  const lastVisitDate = localStorage.getItem('last_visit_date');
-  const lastVisitDevice = localStorage.getItem('last_visit_device');
-  
-  if (lastVisitDate !== todayStr || lastVisitDevice !== deviceType) {
-    await sb.rpc('log_device_visit', { p_date: todayStr, p_device_type: deviceType });
-    localStorage.setItem('last_visit_date', todayStr);
-    localStorage.setItem('last_visit_device', deviceType);
+    const userId = currentUser ? currentUser.id : null;
+    await sb.from('analytics_logs').insert([{
+      user_id: userId,
+      action_type: actionType,
+      device_type: device,
+      user_agent: ua
+    }]);
+  } catch (err) {
+    console.warn('Analytics log failed:', err);
   }
 }
 
-async function fetchAdminDeviceStats() {
-  if (!sb || !currentUser?.isAdmin) return;
-  const { data, error } = await sb.rpc('get_admin_daily_stats');
-  if (data && data.length > 0) {
-    const todayHk = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Hong_Kong"})).toISOString().split('T')[0];
-    const todayData = data.find(d => d.log_date === todayHk) || {total_visits: 0, mobile_visits: 0, tablet_visits: 0, desktop_visits: 0};
-    
-    document.getElementById('adminVisitCount').textContent = todayData.total_visits;
-    document.getElementById('adminDeviceStats').innerHTML = `<i class="fa-solid fa-mobile-screen-button mr-1"></i>手機 ${todayData.mobile_visits} 人 <span class="mx-1">|</span> <i class="fa-solid fa-tablet-screen-button mr-1"></i>平板 ${todayData.tablet_visits} 人 <span class="mx-1">|</span> <i class="fa-solid fa-desktop mr-1"></i>電腦 ${todayData.desktop_visits} 人`;
+async function updateAdminStatsUI() {
+  if (!currentUser?.isAdmin || !sb) return;
+  try {
+    const { count } = await sb.from('analytics_logs').select('*', { count: 'exact', head: true });
+    document.getElementById('adminVisitCount').textContent = count || 0;
+
+    const { data: devData } = await sb.from('analytics_logs').select('device_type');
+    if (devData) {
+      const counts = {};
+      devData.forEach(d => { counts[d.device_type] = (counts[d.device_type] || 0) + 1; });
+      const summary = Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(' ｜ ');
+      document.getElementById('adminDeviceStats').textContent = '設備分佈統計 ➔ ' + (summary || '尚無數據');
+    }
+  } catch (err) {
+    console.warn('Admin stats update failed:', err);
   }
 }
 
 async function openStatsModal() {
-  if (!currentUser?.isAdmin) return;
+  if (!currentUser?.isAdmin || !sb) return;
   document.getElementById('statsModal').classList.remove('hidden');
   const container = document.getElementById('statsListContainer');
-  container.innerHTML = '<div class="text-center py-4 text-slate-500 text-xs">數據載入中...</div>';
-
-  const { data, error } = await sb.rpc('get_admin_daily_stats');
+  container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">載入詳細流量紀錄中...</div>';
   
+  const { data, error } = await sb.from('analytics_logs').select('*').order('created_at', { ascending: false }).limit(50);
   if (error || !data) {
-    container.innerHTML = `<div class="text-center py-4 text-rose-500 text-xs">載入失敗：${error?.message}</div>`;
+    container.innerHTML = '<div class="text-center py-4 text-rose-500 text-xs">載入失敗</div>';
     return;
   }
-
-  if (data.length === 0) {
-     container.innerHTML = '<div class="text-center py-4 text-slate-500 text-xs">暫無任何日誌數據</div>';
-     return;
-  }
-
-  let html = '';
-  data.forEach(stats => {
-    html += `
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-1.5">
-        <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
-          <span class="font-bold text-slate-700">${stats.log_date}</span>
-          <span class="font-black text-amber-600">總計: ${stats.total_visits} 人</span>
-        </div>
-        <div class="flex justify-between text-xs text-slate-500 font-medium px-1">
-          <span><i class="fa-solid fa-mobile-screen-button mr-1"></i>手機: ${stats.mobile_visits}</span>
-          <span><i class="fa-solid fa-tablet-screen-button mr-1"></i>平板: ${stats.tablet_visits}</span>
-          <span><i class="fa-solid fa-desktop mr-1"></i>電腦: ${stats.desktop_visits}</span>
-        </div>
+  
+  container.innerHTML = data.map(log => `
+    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs flex justify-between items-center">
+      <div>
+        <span class="font-bold text-slate-800">${log.action_type}</span>
+        <span class="text-[10px] text-slate-400 block">${new Date(log.created_at).toLocaleString()}</span>
       </div>
-    `;
-  });
-  container.innerHTML = html;
+      <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">${log.device_type}</span>
+    </div>
+  `).join('');
 }
