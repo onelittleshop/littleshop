@@ -172,3 +172,17 @@ async function handleAdminSendMessage(e) {
     document.getElementById('adminTargetUuid').value = '';
   }
 }
+
+// ==================== [擴充：Meta / IG 登入處理] ====================
+async function metaLogin() {
+  if (!sb) return alert('請先填入 Supabase 憑證');
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: { 
+      redirectTo: window.location.origin + window.location.pathname 
+    }
+  });
+  if (error) {
+    alert('Meta 登入錯誤：' + error.message);
+  }
+}
