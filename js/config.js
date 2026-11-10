@@ -25,3 +25,10 @@ function getGuestSession() {
   }
   return sessionId;
 }
+
+// 確保所有模組載入完畢後，在這裡安全觸發初始化
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof initApp === 'function') {
+    initApp();
+  }
+});
