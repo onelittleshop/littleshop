@@ -5,31 +5,6 @@ async function oauthLogin(provider) {
   if (error) alert('OAuth 登入錯誤：' + error.message);
 }
 
-async function emailQuickAuth(e) {
-  e.preventDefault();
-  if (!sb) return alert('請先填入 Supabase 憑證');
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const btn = document.getElementById('emailAuthBtn');
-  btn.disabled = true; btn.textContent = '處理中...';
-
-  let { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error && error.message.includes('Invalid login credentials')) {
-    const signUpRes = await sb.auth.signUp({ email, password });
-    if (signUpRes.error) {
-      alert('登入/註冊失敗：' + signUpRes.error.message);
-    } else {
-      alert('✨ 註冊成功！系統已發送驗證信到你的信箱，請驗證後登入。');
-      closeLoginModal();
-    }
-  } else if (error) {
-    alert('錯誤：' + error.message);
-  } else {
-    closeLoginModal();
-  }
-  btn.disabled = false; btn.textContent = 'Email 一鍵登入 / 自動註冊';
-}
-
 function previewAndCompressAvatar(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -170,19 +145,5 @@ async function handleAdminSendMessage(e) {
     closeAdminMsgModal();
     document.getElementById('adminMsgContent').value = '';
     document.getElementById('adminTargetUuid').value = '';
-  }
-}
-
-// ==================== [擴充：Meta / IG 登入處理] ====================
-async function metaLogin() {
-  if (!sb) return alert('請先填入 Supabase 憑證');
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'facebook',
-    options: { 
-      redirectTo: window.location.origin + window.location.pathname 
-    }
-  });
-  if (error) {
-    alert('Meta 登入錯誤：' + error.message);
   }
 }
