@@ -1,4 +1,3 @@
-
 // ==================== [模塊：Auctions & Bidding] ====================
 let tempImagesBase64 = [];
 let activeDetailId = null;
@@ -7,7 +6,8 @@ let detailInterval = null;
 
 async function fetchAuctions() {
   if (!sb) return;
-  const { data, error } = await sb.from('items').select('*').order('created_at', { ascending: false });
+  // Fetch items along with their relational bids
+  const { data, error } = await sb.from('items').select('*, bids(*)').order('created_at', { ascending: false });
   if (!error && data) {
     auctions = data.map(item => ({
       id: item.id,
@@ -22,7 +22,13 @@ async function fetchAuctions() {
       location: item.location,
       desc: item.description,
       images: item.images || [],
-      bids: item.bids || [],
+      // Map relational bids to match frontend structure expected by UI
+      bids: (item.bids || []).map(b => ({
+        bidderId: b.bidder_id,
+        bidderName: b.bidder_name,
+        amount: b.amount,
+        time: b.created_at
+      })).sort((a, b) => new Date(a.time) - new Date(b.time)),
       status: item.status || 'active',
       isBiddable: item.is_biddable ?? true,
       winnerId: item.winner_id || null,
@@ -190,7 +196,6 @@ async function handleCreateAuction(e) {
     location,
     description: desc,
     images: tempImagesBase64,
-    bids: [],
     status: 'active',
     is_biddable: true
   };
@@ -202,5 +207,48 @@ async function handleCreateAuction(e) {
     alert('✨ 拍賣品成功上架！');
     closeUploadModal();
     await fetchAuctions();
+  }
+}
+
+async function placeBid(itemId) {
+  if (!currentUser) return openLoginModal();
+  if (!currentUser.phone) {
+    alert('⚠️ 您的帳號尚未綁定香港電話，請先前往「修改資料」綁定電話後才能下標！');
+    return openProfileModal(false);
+  }
+
+  const item = auctions.find(a => a.id === itemId);
+  if (!item) return;
+
+  const inputAmt = Number(document.getElementById('bidAmountInput').value);
+  const minRequired = item.currentPrice + item.bidIncrement;
+  if (inputAmt < minRequired) {
+    return alert(`出價金額不得低於 $${minRequired}`);
+  }
+
+  // Insert into relational public.bids table
+  const { error: bidError } = await sb.from('bids').insert([{
+    auction_id: itemId,
+    bidder_id: currentUser.id,
+    bidder_name: currentUser.nickname || '匿名買家',
+    amount: inputAmt
+  }]);
+
+  if (bidError) {
+    return alert('出價失敗：' + bidError.message);
+  }
+
+  // Update current_price on items table
+  const { error: updateError } = await sb.from('items').update({
+    current_price: inputAmt
+  }).eq('id', itemId);
+
+  if (updateError) {
+    alert('更新價格失敗：' + updateError.message);
+  } else {
+    alert('🎉 出價成功！');
+    await logActivity('place_bid');
+    await fetchAuctions();
+    openDetailModal(itemId);
   }
 }
