@@ -16,7 +16,7 @@ async function loadUserProfile(userId) {
   if (!uid || typeof uid !== 'string') return;
 
   try {
-    const { data, error } = await sb.from('profiles').select('*').eq('id', uid).single();
+    const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
     if (data) {
       currentUser = {
         id: uid,
