@@ -226,22 +226,14 @@
         <h3 class="text-lg font-bold text-slate-900">登入參與競標</h3>
         <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <p class="text-xs text-slate-500 mb-4">首次登入需設定顯示名稱與聯絡電話。</p>
+      <p class="text-xs text-slate-500 mb-4">首次登入僅需設定顯示名稱與聯絡電話，平台不會收集任何其他敏感個人數據。</p>
       
       <div class="space-y-2.5">
-        <button onclick="oauthLogin('google')" class="w-full flex items-center justify-center space-x-3 py-2.5 px-4 border border-slate-300 rounded-xl hover:bg-slate-50 font-medium text-sm text-slate-700">
-          <i class="fa-brands fa-google text-rose-500"></i>
+        <button onclick="oauthLogin('google')" class="w-full flex items-center justify-center space-x-3 py-2.5 px-4 border border-slate-300 rounded-xl hover:bg-slate-50 font-medium text-sm text-slate-700 shadow-sm transition">
+          <i class="fa-brands fa-google text-rose-500 text-lg"></i>
           <span>使用 Google 帳號繼續</span>
         </button>
-
       </div>
-
-      
-        <span class="flex-shrink mx-3 text-slate-400 text-[11px]">或使用 Email 快速登入/註冊</span>
-        <div class="flex-grow border-t border-slate-200"></div>
-      </div>
-
-      
     </div>
   </div>
 
@@ -418,7 +410,6 @@
         
         <div class="p-5 bg-white border-t border-slate-100 flex-1">
           <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
-            <!-- 動態顯示 雙層分類標籤 -->
             <span id="detailCat" class="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded"></span>
             <span class="font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded"><i class="fa-solid fa-location-dot text-amber-500 mr-1"></i><span id="detailLocation"></span></span>
           </div>
@@ -461,7 +452,6 @@
   </div>
 
   <!-- ==================== [模塊 12：核心 JavaScript 邏輯] ==================== -->
-    <!-- Modular Scripts -->
   <script src="./js/config.js"></script>
   <script src="./js/analytics.js"></script>
   <script src="./js/auth.js"></script>
