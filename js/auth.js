@@ -1,4 +1,3 @@
-
 // ==================== [模塊：Auth & User Profile] ====================
 async function oauthLogin(provider) {
   if (!sb) return alert('請先填入 Supabase 憑證');
@@ -8,7 +7,6 @@ async function oauthLogin(provider) {
 
 async function loadUserProfile(userId) {
   if (!sb) return;
-  // Ensure userId is a string primitive, not an object or event
   let uid = userId;
   if (typeof uid === 'object' && uid !== null) {
     uid = uid.id || uid.user?.id || '';
@@ -23,7 +21,7 @@ async function loadUserProfile(userId) {
         nickname: data.nickname || '',
         phone: data.phone || '',
         avatar_url: data.avatar_url || '',
-        isAdmin: currentUser?.isAdmin || false
+        isAdmin: data.is_admin || false
       };
       if (!data.nickname) {
         openProfileModal(true);
