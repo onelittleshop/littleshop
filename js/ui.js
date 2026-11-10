@@ -137,3 +137,33 @@ setInterval(() => {
 }, 1000);
 
 
+
+// ==================== [初始化入口] ====================
+async function initApp() {
+  if (!isConfigured) return;
+  
+  await logActivity('home');
+  await fetchCategories(); 
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    if (session?.user) {
+      await loadUserProfile(session.user);
+      await fetchUserMessages();
+    } else {
+      currentUser = null;
+      userMessages = [];
+      updateAuthUI();
+    }
+    await fetchAuctions();
+  });
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await loadUserProfile(session.user);
+    await fetchUserMessages();
+  }
+  await fetchAuctions();
+}
+
+// 啟動應用程式
+initApp();
