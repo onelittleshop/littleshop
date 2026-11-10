@@ -228,20 +228,12 @@
       </div>
       <p class="text-xs text-slate-500 mb-4">首次登入需設定顯示名稱與聯絡電話。</p>
       
-    <!-- ==================== [模塊 7：登入與註冊 Modal 局部修改] ==================== -->
-<div class="space-y-2.5">
-  <!-- 原有的 Google 登入按鈕 -->
-  <button onclick="oauthLogin('google')" class="w-full flex items-center justify-center space-x-3 py-2.5 px-4 border border-slate-300 rounded-xl hover:bg-slate-50 font-medium text-sm text-slate-700">
-    <i class="fa-brands fa-google text-rose-500"></i>
-    <span>使用 Google 帳號繼續</span>
-  </button>
-
-  <!-- 新增：Meta / IG 登入按鈕 -->
-  <button onclick="metaLogin()" class="w-full flex items-center justify-center space-x-3 py-2.5 px-4 border border-slate-300 rounded-xl hover:bg-slate-50 font-medium text-sm text-slate-700">
-    <i class="fa-brands fa-instagram text-pink-600"></i>
-    <span>使用 Instagram / Meta 繼續</span>
-  </button>
-</div>
+      <div class="space-y-2.5">
+        <button onclick="oauthLogin('google')" class="w-full flex items-center justify-center space-x-3 py-2.5 px-4 border border-slate-300 rounded-xl hover:bg-slate-50 font-medium text-sm text-slate-700">
+          <i class="fa-brands fa-google text-rose-500"></i>
+          <span>使用 Google 帳號繼續</span>
+        </button>
+      </div>
 
       <div class="relative flex py-4 items-center">
         <div class="flex-grow border-t border-slate-200"></div>

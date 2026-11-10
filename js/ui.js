@@ -136,5 +136,4 @@ setInterval(() => {
   });
 }, 1000);
 
-// Initialize App Entry Point
-// initApp(); --REMOVE TO config.js
+

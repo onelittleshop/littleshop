@@ -26,9 +26,30 @@ function getGuestSession() {
   return sessionId;
 }
 
-// 確保所有模組載入完畢後，在這裡安全觸發初始化
-window.addEventListener('DOMContentLoaded', () => {
-  if (typeof initApp === 'function') {
-    initApp();
+
+// ==================== [初始化入口] ==================== 
+async function initApp() {
+  if (!isConfigured) return;
+  
+  await logActivity('home');
+  await fetchCategories(); 
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    if (session?.user) {
+      await loadUserProfile(session.user);
+      await fetchUserMessages();
+    } else {
+      currentUser = null;
+      userMessages = [];
+      updateAuthUI();
+    }
+    await fetchAuctions();
+  });
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await loadUserProfile(session.user);
+    await fetchUserMessages();
   }
-});
+  await fetchAuctions();
+}
