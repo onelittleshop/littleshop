@@ -7,7 +7,7 @@ let detailInterval = null;
 async function fetchAuctions() {
   if (!sb) return;
   // Fetch items along with their relational bids
-  const { data, error } = await sb.from('items').select('*, bids(*)').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('auctions').select('*, bids(*)').order('created_at', { ascending: false });
   if (!error && data) {
     auctions = data.map(item => ({
       id: item.id,
@@ -200,7 +200,7 @@ async function handleCreateAuction(e) {
     is_biddable: true
   };
 
-  const { error } = await sb.from('items').insert([newItem]);
+  const { error } = await sb.from('auctions').insert([newItem]);
   if (error) {
     alert('上架失敗：' + error.message);
   } else {
@@ -239,7 +239,7 @@ async function placeBid(itemId) {
   }
 
   // Update current_price on items table
-  const { error: updateError } = await sb.from('items').update({
+  const { error: updateError } = await sb.from('auctions').update({
     current_price: inputAmt
   }).eq('id', itemId);
 

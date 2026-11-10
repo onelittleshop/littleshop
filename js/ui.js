@@ -294,7 +294,7 @@ async function placeBid(itemId) {
   };
 
   const updatedBids = [...item.bids, newBid];
-  const { error } = await sb.from('items').update({
+  const { error } = await sb.from('auctions').update({
     current_price: inputAmt,
     bids: updatedBids
   }).eq('id', itemId);
@@ -314,7 +314,7 @@ async function toggleAuctionVisibility() {
   const item = auctions.find(a => a.id === activeDetailId);
   if (!item) return;
   const newStatus = item.status === 'hidden' ? 'active' : 'hidden';
-  await sb.from('items').update({ status: newStatus }).eq('id', activeDetailId);
+  await sb.from('auctions').update({ status: newStatus }).eq('id', activeDetailId);
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
@@ -324,7 +324,7 @@ async function toggleAuctionBiddable() {
   const item = auctions.find(a => a.id === activeDetailId);
   if (!item) return;
   const newBiddable = !item.isBiddable;
-  await sb.from('items').update({ is_biddable: newBiddable }).eq('id', activeDetailId);
+  await sb.from('auctions').update({ is_biddable: newBiddable }).eq('id', activeDetailId);
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
