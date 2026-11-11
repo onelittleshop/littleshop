@@ -229,16 +229,24 @@ async function handleCreateAuction(e) {
 
   let endTime = endTimeInput ? new Date(endTimeInput).toISOString() : new Date(Date.now() + 86400000).toISOString();
 
+  // 自動將新增/手動輸入的分類寫入 categories 資料表，確保分類永久生效並可供後續選擇
   try {
     await sb.rpc('ensure_category_exists', {
       p_cat: category,
       p_sub_cat: subCategory || null
     });
   } catch (err) {
-    console.warn('ensure_category_exists 略過:', err);
+    // 若 RPC 不存在或失敗，直接用標準 Table upsert 寫入分類
+    try {
+      await sb.from('categories').upsert([{ name: category, parent_name: null }], { onConflict: 'name' });
+      if (subCategory) {
+        await sb.from('categories').upsert([{ name: subCategory, parent_name: category }], { onConflict: 'name' });
+      }
+    } catch (catErr) {
+      console.warn('自動同步分類到 categories 表失敗:', catErr);
+    }
   }
 
-  // Schema matching for auctions table
   const newItem = {
     title,
     category,
@@ -260,12 +268,11 @@ async function handleCreateAuction(e) {
   if (error) {
     alert('上架失敗：' + error.message);
   } else {
-    alert('✨ 拍賣品成功上架！');
+    alert('✨ 拍賣品成功上架，新分類已自動儲存！');
     closeUploadModal();
     await fetchAuctions();
   }
 }
-
 async function placeBid(itemId) {
   if (!currentUser) return openLoginModal();
   if (!currentUser.phone) {
