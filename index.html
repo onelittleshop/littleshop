@@ -186,14 +186,36 @@
     </div>
   </div>
 
+  
   <!-- ==================== [模塊 5：站內訊息中心 Modal] ==================== -->
   <div id="messagesModal" onclick="if(event.target === this) document.getElementById('messagesModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-2xl modal-enter flex flex-col max-h-[85vh]">
-      <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-        <h3 class="text-base font-bold text-slate-900"><i class="fa-regular fa-bell text-amber-500 mr-2"></i>站內訊息中心</h3>
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-0 shadow-2xl modal-enter flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
+      <!-- Header -->
+      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 shrink-0">
+        <div class="flex items-center space-x-2">
+          <button id="msgBackButton" onclick="showMessagesList()" class="hidden text-slate-500 hover:text-amber-600 transition p-1 mr-1">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <h3 id="messagesModalTitle" class="text-base font-bold text-slate-900"><i class="fa-regular fa-bell text-amber-500 mr-2"></i>站內訊息中心</h3>
+        </div>
         <button onclick="document.getElementById('messagesModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div id="messagesListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
+      
+      <!-- List View -->
+      <div id="messagesListContainer" class="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50/50"></div>
+      
+      <!-- Chat View -->
+      <div id="messagesChatContainer" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+        <div id="chatHistory" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
+        <div class="p-3 bg-white border-t border-slate-100">
+          <form onsubmit="handleReplyMessage(event)" class="flex items-end space-x-2">
+            <textarea id="replyMsgContent" required rows="1" placeholder="輸入訊息..." class="flex-1 bg-slate-100 border-transparent focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm resize-none" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 100) + 'px'"></textarea>
+            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm transition">
+              <i class="fa-solid fa-paper-plane text-sm -ml-0.5 mt-0.5"></i>
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -154,12 +154,22 @@ async function openDetailModal(id) {
     bidBtn.textContent = item.isBiddable ? '鎖定不出價' : '開放出價';
     bidBtn.className = item.isBiddable ? 'bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
 
+
     if (item.bids.length > 0) {
       const winnerBid = item.bids[item.bids.length - 1];
       const contactBox = document.getElementById('adminWinnerContactBox');
       contactBox.classList.remove('hidden');
-      contactBox.innerHTML = `<strong>🏆 最高出價者：</strong> ${winnerBid.bidderName} <span class="text-[10px] text-slate-500 ml-1">(UUID: ${winnerBid.bidderId})</span>`;
+      contactBox.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div>
+            <strong>🏆 最高出價者：</strong> ${winnerBid.bidderName} <br>
+            <span class="text-[10px] text-slate-500">(UUID: ${winnerBid.bidderId})</span>
+          </div>
+          <button onclick="notifyWinner('${item.id}', '${winnerBid.bidderId}', '${winnerBid.bidderName}')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">發送得標通知</button>
+        </div>
+      `;
     } else {
+
       document.getElementById('adminWinnerContactBox').classList.add('hidden');
     }
   } else {
@@ -322,3 +332,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   await logActivity('home');
   await fetchAuctions();
 });
+
+
+async function notifyWinner(auctionId, winnerId, winnerName) {
+  if (!currentUser?.isAdmin) return;
+  const item = auctions.find(a => a.id === auctionId);
+  if (!item) return;
+
+  const content = `恭喜您！您已成功得標【${item.title}】🎉
+結標金額為：$${item.currentPrice}
+交收方式：${item.method} (${item.location})
+
+請直接回覆此訊息與我們確認交收時間與細節，謝謝！`;
+
+  const { error } = await sb.from('messages').insert([{
+    sender_id: currentUser.id,
+    receiver_id: winnerId,
+    sender_name: '官方管理員',
+    receiver_name: winnerName,
+    auction_id: auctionId,
+    content: content
+  }]);
+
+  if (error) {
+    alert('發送通知失敗：' + error.message);
+  } else {
+    alert('✅ 已成功發送得標通知與對話視窗給買家！');
+    fetchUserMessages();
+  }
+}

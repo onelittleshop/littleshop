@@ -146,11 +146,24 @@ function updateAuthUI() {
   }
 }
 
+// ... we will completely rewrite fetchUserMessages and openMessagesModal in auth.js
+
+let activeChatUserId = null;
+let activeChatAuctionId = null;
+
 async function fetchUserMessages() {
   if (!currentUser || !currentUser.id || !sb) return;
-  const { data } = await sb.from('messages').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+  
+  // 獲取與我相關的所有訊息 (我是發送者或接收者)
+  const { data } = await sb.from('messages')
+    .select('*')
+    .or(`receiver_id.eq.${currentUser.id},sender_id.eq.${currentUser.id}`)
+    .order('created_at', { ascending: false });
+    
   userMessages = data || [];
-  const unreadCount = userMessages.filter(m => !m.is_read).length;
+  
+  // 計算未讀 (只有我是接收者且未讀的才算)
+  const unreadCount = userMessages.filter(m => m.receiver_id === currentUser.id && !m.is_read).length;
   const badge = document.getElementById('unreadMsgBadge');
   if (unreadCount > 0) {
     badge.textContent = unreadCount;
@@ -160,50 +173,180 @@ async function fetchUserMessages() {
   }
 }
 
+// 根據訊息重組對話列表 (按最後一筆訊息時間排序)
+function getConversations() {
+  const convos = {};
+  userMessages.forEach(m => {
+    // 決定聊天對象 (Admin / User)
+    const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+    const partnerName = m.sender_id === currentUser.id ? (m.receiver_name || '管理員') : (m.sender_name || '用戶');
+    
+    // 可以透過 auction_id 分拆不同訂單的對話，若無則歸為 general
+    const threadId = m.auction_id ? `${partnerId}_${m.auction_id}` : `${partnerId}_general`;
+    
+    if (!convos[threadId]) {
+      convos[threadId] = {
+        partnerId: partnerId,
+        partnerName: partnerName,
+        auctionId: m.auction_id,
+        messages: [],
+        lastMessage: m,
+        unreadCount: 0
+      };
+    }
+    
+    convos[threadId].messages.push(m);
+    if (m.receiver_id === currentUser.id && !m.is_read) {
+      convos[threadId].unreadCount++;
+    }
+    // 確保 messages 陣列按時間正序排列 (最舊到最新)
+    convos[threadId].messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  });
+  
+  // 將對話轉為陣列並依最後訊息時間排序 (最新在最上)
+  return Object.values(convos).sort((a, b) => new Date(b.lastMessage.created_at) - new Date(a.lastMessage.created_at));
+}
+
 async function openMessagesModal() {
   await logActivity('messages');
   document.getElementById('messagesModal').classList.remove('hidden');
+  showMessagesList();
+}
+
+function showMessagesList() {
+  document.getElementById('messagesListContainer').classList.remove('hidden');
+  document.getElementById('messagesChatContainer').classList.add('hidden');
+  document.getElementById('msgBackButton').classList.add('hidden');
+  document.getElementById('messagesModalTitle').innerHTML = `<i class="fa-regular fa-bell text-amber-500 mr-2"></i>站內訊息中心`;
+  activeChatUserId = null;
+  activeChatAuctionId = null;
+
   const container = document.getElementById('messagesListContainer');
-  if (!userMessages || userMessages.length === 0) {
-    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">目前沒有任何站內訊息</div>';
+  const convos = getConversations();
+
+  if (convos.length === 0) {
+    container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center"><i class="fa-regular fa-comments text-3xl mb-3 text-slate-200"></i>目前沒有任何對話紀錄</div>';
     return;
   }
-  container.innerHTML = userMessages.map(m => `
-    <div class="p-3.5 rounded-xl border ${m.is_read ? 'bg-slate-50 border-slate-200' : 'bg-amber-50/70 border-amber-200'} text-xs space-y-1">
-      <div class="flex justify-between items-center">
-        <span class="font-bold text-slate-900">${m.sender_name || '系統訊息'}</span>
-        <span class="text-[10px] text-slate-400">${new Date(m.created_at).toLocaleString()}</span>
-      </div>
-      <p class="text-slate-700 whitespace-pre-line">${m.content}</p>
-    </div>
-  `).join('');
 
-  const unreadIds = userMessages.filter(m => !m.is_read).map(m => m.id);
+  container.innerHTML = convos.map(c => {
+    const isUnread = c.unreadCount > 0;
+    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2">商品相關</span>` : '';
+    return `
+      <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3.5 rounded-xl border ${isUnread ? 'bg-amber-50/80 border-amber-200 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50'} text-xs cursor-pointer transition flex justify-between items-center group">
+        <div class="flex items-center space-x-3 overflow-hidden">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+            ${c.partnerName.charAt(0)}
+          </div>
+          <div class="truncate">
+            <div class="font-bold text-slate-900 text-sm flex items-center">
+              ${c.partnerName} ${itemInfo}
+            </div>
+            <div class="text-slate-500 truncate mt-0.5 ${isUnread ? 'font-semibold text-amber-900' : ''}">${c.lastMessage.content}</div>
+          </div>
+        </div>
+        <div class="flex flex-col items-end shrink-0 pl-2">
+          <span class="text-[10px] text-slate-400">${new Date(c.lastMessage.created_at).toLocaleDateString()}</span>
+          ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-1">${c.unreadCount}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function openChat(partnerId, auctionId, partnerName) {
+  activeChatUserId = partnerId;
+  activeChatAuctionId = auctionId || null;
+  
+  document.getElementById('messagesListContainer').classList.add('hidden');
+  document.getElementById('messagesChatContainer').classList.remove('hidden');
+  document.getElementById('msgBackButton').classList.remove('hidden');
+  document.getElementById('messagesModalTitle').textContent = partnerName;
+  
+  renderChatHistory();
+  
+  // 標記該對話為已讀
+  const unreadIds = userMessages
+    .filter(m => m.receiver_id === currentUser.id && !m.is_read && m.sender_id === partnerId && (m.auction_id || '') === auctionId)
+    .map(m => m.id);
+    
   if (unreadIds.length > 0 && sb) {
     await sb.from('messages').update({ is_read: true }).in('id', unreadIds);
-    fetchUserMessages();
+    // 更新本地狀態
+    userMessages.forEach(m => {
+      if (unreadIds.includes(m.id)) m.is_read = true;
+    });
+    fetchUserMessages(); // 刷新 badge
   }
 }
 
-function openAdminMsgModal() { 
-  document.getElementById('adminMsgModal').classList.remove('hidden'); 
+function renderChatHistory() {
+  const container = document.getElementById('chatHistory');
+  const threadId = activeChatAuctionId ? `${activeChatUserId}_${activeChatAuctionId}` : `${activeChatUserId}_general`;
+  const convo = getConversations().find(c => (c.auctionId ? `${c.partnerId}_${c.auctionId}` : `${c.partnerId}_general`) === threadId);
+  
+  if (!convo) return;
+
+  container.innerHTML = convo.messages.map(m => {
+    const isMe = m.sender_id === currentUser.id;
+    return `
+      <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+        <div class="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-100 text-slate-800 rounded-bl-none'}">
+          <p class="whitespace-pre-line">${m.content}</p>
+          <span class="text-[9px] mt-1 block opacity-70 ${isMe ? 'text-right' : 'text-left'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // 捲動到底部
+  setTimeout(() => {
+    container.scrollTop = container.scrollHeight;
+  }, 10);
 }
-function closeAdminMsgModal() { document.getElementById('adminMsgModal').classList.add('hidden'); }
 
-async function handleAdminSendMessage(e) {
+async function handleReplyMessage(e) {
   e.preventDefault();
-  if (!currentUser?.isAdmin) return alert('權限不足');
-  const targetUuid = document.getElementById('adminTargetUuid').value.trim();
-  const senderName = document.getElementById('adminSenderName').value.trim() || '系統訊息';
-  const content = document.getElementById('adminMsgContent').value.trim();
+  const input = document.getElementById('replyMsgContent');
+  const content = input.value.trim();
+  if (!content || !activeChatUserId) return;
 
-  const { error } = await sb.from('messages').insert([{ user_id: targetUuid, sender_name: senderName, content: content }]);
+  input.value = '';
+  input.style.height = '';
+
+  // 樂觀更新 UI
+  const tempMsg = {
+    id: 'temp_' + Date.now(),
+    sender_id: currentUser.id,
+    receiver_id: activeChatUserId,
+    sender_name: currentUser.nickname,
+    receiver_name: document.getElementById('messagesModalTitle').textContent,
+    auction_id: activeChatAuctionId,
+    content: content,
+    is_read: false,
+    created_at: new Date().toISOString()
+  };
+  
+  userMessages.push(tempMsg);
+  renderChatHistory();
+
+  // 實際寫入資料庫
+  const { error } = await sb.from('messages').insert([{
+    sender_id: currentUser.id,
+    receiver_id: activeChatUserId,
+    sender_name: currentUser.nickname,
+    receiver_name: document.getElementById('messagesModalTitle').textContent,
+    auction_id: activeChatAuctionId,
+    content: content
+  }]);
+
   if (error) {
     alert('發送失敗：' + error.message);
+    userMessages = userMessages.filter(m => m.id !== tempMsg.id); // 移除失敗的暫存
+    renderChatHistory();
   } else {
-    alert('✅ 訊息已成功發送給指定用戶！');
-    closeAdminMsgModal();
-    document.getElementById('adminMsgContent').value = '';
-    document.getElementById('adminTargetUuid').value = '';
+    // 重新拉取確保拿到真正的 ID
+    await fetchUserMessages();
+    renderChatHistory();
   }
 }
