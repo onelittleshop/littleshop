@@ -368,14 +368,13 @@ async function handleAdminSendMessage(e) {
   e.preventDefault();
   if (!currentUser?.isAdmin) return alert('權限不足');
   const targetUuid = document.getElementById('adminTargetUuid').value.trim();
-  const senderName = document.getElementById('adminSenderName').value.trim() || '系統訊息';
   const content = document.getElementById('adminMsgContent').value.trim();
 
   const { error } = await sb.from('messages').insert([{
     user_id: targetUuid,
     sender_id: currentUser.id,
     receiver_id: targetUuid,
-    sender_name: senderName,
+    sender_name: '官方管理員',
     receiver_name: '用戶',
     content: content
   }]);
