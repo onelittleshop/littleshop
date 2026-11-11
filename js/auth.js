@@ -146,15 +146,13 @@ function updateAuthUI() {
   }
 }
 
-// ... we will completely rewrite fetchUserMessages and openMessagesModal in auth.js
-
+// ==================== [雙向訊息系統] ====================
 let activeChatUserId = null;
 let activeChatAuctionId = null;
 
 async function fetchUserMessages() {
   if (!currentUser || !currentUser.id || !sb) return;
   
-  // 獲取與我相關的所有訊息 (我是發送者或接收者)
   const { data } = await sb.from('messages')
     .select('*')
     .or(`receiver_id.eq.${currentUser.id},sender_id.eq.${currentUser.id}`)
@@ -162,7 +160,6 @@ async function fetchUserMessages() {
     
   userMessages = data || [];
   
-  // 計算未讀 (只有我是接收者且未讀的才算)
   const unreadCount = userMessages.filter(m => m.receiver_id === currentUser.id && !m.is_read).length;
   const badge = document.getElementById('unreadMsgBadge');
   if (unreadCount > 0) {
@@ -173,15 +170,12 @@ async function fetchUserMessages() {
   }
 }
 
-// 根據訊息重組對話列表 (按最後一筆訊息時間排序)
 function getConversations() {
   const convos = {};
   userMessages.forEach(m => {
-    // 決定聊天對象 (Admin / User)
     const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
-    const partnerName = m.sender_id === currentUser.id ? (m.receiver_name || '管理員') : (m.sender_name || '用戶');
+    const partnerName = m.sender_id === currentUser.id ? (m.receiver_name || '系統/用戶') : (m.sender_name || '管理員');
     
-    // 可以透過 auction_id 分拆不同訂單的對話，若無則歸為 general
     const threadId = m.auction_id ? `${partnerId}_${m.auction_id}` : `${partnerId}_general`;
     
     if (!convos[threadId]) {
@@ -199,16 +193,14 @@ function getConversations() {
     if (m.receiver_id === currentUser.id && !m.is_read) {
       convos[threadId].unreadCount++;
     }
-    // 確保 messages 陣列按時間正序排列 (最舊到最新)
     convos[threadId].messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   });
   
-  // 將對話轉為陣列並依最後訊息時間排序 (最新在最上)
   return Object.values(convos).sort((a, b) => new Date(b.lastMessage.created_at) - new Date(a.lastMessage.created_at));
 }
 
 async function openMessagesModal() {
-  await logActivity('messages');
+  await logActivity('messages_view');
   document.getElementById('messagesModal').classList.remove('hidden');
   showMessagesList();
 }
@@ -231,9 +223,9 @@ function showMessagesList() {
 
   container.innerHTML = convos.map(c => {
     const isUnread = c.unreadCount > 0;
-    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2">商品相關</span>` : '';
+    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2 shadow-sm"><i class="fa-solid fa-gavel mr-1"></i>專屬訂單對話</span>` : '';
     return `
-      <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3.5 rounded-xl border ${isUnread ? 'bg-amber-50/80 border-amber-200 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50'} text-xs cursor-pointer transition flex justify-between items-center group">
+      <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3.5 rounded-xl border ${isUnread ? 'bg-amber-50/80 border-amber-300 shadow-md' : 'bg-white border-slate-200 hover:bg-slate-50 shadow-sm'} text-xs cursor-pointer transition flex justify-between items-center group">
         <div class="flex items-center space-x-3 overflow-hidden">
           <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
             ${c.partnerName.charAt(0)}
@@ -247,7 +239,7 @@ function showMessagesList() {
         </div>
         <div class="flex flex-col items-end shrink-0 pl-2">
           <span class="text-[10px] text-slate-400">${new Date(c.lastMessage.created_at).toLocaleDateString()}</span>
-          ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-1">${c.unreadCount}</span>` : ''}
+          ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-1 shadow-sm">${c.unreadCount}</span>` : ''}
         </div>
       </div>
     `;
@@ -265,18 +257,16 @@ async function openChat(partnerId, auctionId, partnerName) {
   
   renderChatHistory();
   
-  // 標記該對話為已讀
   const unreadIds = userMessages
     .filter(m => m.receiver_id === currentUser.id && !m.is_read && m.sender_id === partnerId && (m.auction_id || '') === auctionId)
     .map(m => m.id);
     
   if (unreadIds.length > 0 && sb) {
     await sb.from('messages').update({ is_read: true }).in('id', unreadIds);
-    // 更新本地狀態
     userMessages.forEach(m => {
       if (unreadIds.includes(m.id)) m.is_read = true;
     });
-    fetchUserMessages(); // 刷新 badge
+    fetchUserMessages(); 
   }
 }
 
@@ -291,15 +281,14 @@ function renderChatHistory() {
     const isMe = m.sender_id === currentUser.id;
     return `
       <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-        <div class="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-100 text-slate-800 rounded-bl-none'}">
-          <p class="whitespace-pre-line">${m.content}</p>
-          <span class="text-[9px] mt-1 block opacity-70 ${isMe ? 'text-right' : 'text-left'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'}">
+          <p class="whitespace-pre-line leading-relaxed">${m.content}</p>
+          <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
         </div>
       </div>
     `;
   }).join('');
   
-  // 捲動到底部
   setTimeout(() => {
     container.scrollTop = container.scrollHeight;
   }, 10);
@@ -314,12 +303,12 @@ async function handleReplyMessage(e) {
   input.value = '';
   input.style.height = '';
 
-  // 樂觀更新 UI
   const tempMsg = {
     id: 'temp_' + Date.now(),
+    user_id: activeChatUserId,
     sender_id: currentUser.id,
     receiver_id: activeChatUserId,
-    sender_name: currentUser.nickname,
+    sender_name: currentUser.nickname || '用戶',
     receiver_name: document.getElementById('messagesModalTitle').textContent,
     auction_id: activeChatAuctionId,
     content: content,
@@ -330,11 +319,11 @@ async function handleReplyMessage(e) {
   userMessages.push(tempMsg);
   renderChatHistory();
 
-  // 實際寫入資料庫
   const { error } = await sb.from('messages').insert([{
+    user_id: activeChatUserId,
     sender_id: currentUser.id,
     receiver_id: activeChatUserId,
-    sender_name: currentUser.nickname,
+    sender_name: currentUser.nickname || '用戶',
     receiver_name: document.getElementById('messagesModalTitle').textContent,
     auction_id: activeChatAuctionId,
     content: content
@@ -342,10 +331,9 @@ async function handleReplyMessage(e) {
 
   if (error) {
     alert('發送失敗：' + error.message);
-    userMessages = userMessages.filter(m => m.id !== tempMsg.id); // 移除失敗的暫存
+    userMessages = userMessages.filter(m => m.id !== tempMsg.id);
     renderChatHistory();
   } else {
-    // 重新拉取確保拿到真正的 ID
     await fetchUserMessages();
     renderChatHistory();
   }

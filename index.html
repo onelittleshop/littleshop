@@ -74,56 +74,52 @@
     </div>
   </header>
 
-  
   <!-- ==================== [全局固定工具列 (公告 + 分類 + 管理員)] ==================== -->
   <div class="sticky top-16 z-20 bg-slate-50 flex flex-col shadow-sm">
-    <!-- ==================== [模塊 2.5：滾動公告欄] ==================== -->
     <div class="bg-amber-50 border-b border-amber-100 py-1.5 sm:py-2 text-xs sm:text-sm text-amber-900 flex items-center z-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center">
-      <i class="fa-solid fa-bullhorn text-amber-500 mr-2 shrink-0"></i>
-      <div class="marquee-container">
-        <div class="marquee-text font-medium tracking-wide">
-          目前還未正式上線，可以先追蹤 <a href="https://www.instagram.com/one_little_shop" target="_blank" class="text-rose-500 font-bold hover:text-rose-600 underline mx-1">IG</a> 看最新情況 ✨
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center">
+        <i class="fa-solid fa-bullhorn text-amber-500 mr-2 shrink-0"></i>
+        <div class="marquee-container">
+          <div class="marquee-text font-medium tracking-wide">
+            目前還未正式上線，可以先追蹤 <a href="https://www.instagram.com/one_little_shop" target="_blank" class="text-rose-500 font-bold hover:text-rose-600 underline mx-1">IG</a> 看最新情況 ✨
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    <!-- ==================== [模塊 3：視角、分類、排序與版面切換列] ==================== -->
     <div class="bg-white border-b border-slate-200 shadow-sm relative z-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex space-x-2">
-          <button id="tabAll" onclick="switchView('all')" class="px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition">
-            <i class="fa-solid fa-fire text-amber-400 mr-1"></i> 全部拍賣場
-          </button>
-          <button id="tabMyBids" onclick="switchView('my_bids')" class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 transition">
-            <i class="fa-solid fa-hand-holding-dollar mr-1"></i> 我的參標紀錄 <span id="myBidCountBadge" class="ml-1 px-1.5 py-0.2 text-xs rounded-full bg-slate-200 text-slate-700">0</span>
-          </button>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex space-x-2">
+            <button id="tabAll" onclick="switchView('all')" class="px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition">
+              <i class="fa-solid fa-fire text-amber-400 mr-1"></i> 全部拍賣場
+            </button>
+            <button id="tabMyBids" onclick="switchView('my_bids')" class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 transition">
+              <i class="fa-solid fa-hand-holding-dollar mr-1"></i> 我的參標紀錄 <span id="myBidCountBadge" class="ml-1 px-1.5 py-0.2 text-xs rounded-full bg-slate-200 text-slate-700">0</span>
+            </button>
+          </div>
+          <div id="categoryBtnContainer" class="flex items-center space-x-2 overflow-x-auto text-sm no-scrollbar">
+            <span class="text-slate-400 text-xs mr-1 shrink-0">分類:</span>
+          </div>
         </div>
-        <div id="categoryBtnContainer" class="flex items-center space-x-2 overflow-x-auto text-sm no-scrollbar">
-          <span class="text-slate-400 text-xs mr-1 shrink-0">分類:</span>
-        </div>
-      </div>
-      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-        <div class="flex items-center space-x-2">
-          <span class="text-slate-400 text-xs font-medium"><i class="fa-solid fa-arrow-down-a-z mr-1"></i>排序:</span>
-          <select id="sortSelect" onchange="changeSort()" class="text-xs border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
-            <option value="latest">最新上架</option>
-            <option value="ending_soon">快將截標</option>
-            <option value="price_asc">價格：由低至高</option>
-            <option value="price_desc">價格：由高至低</option>
-          </select>
-        </div>
-        <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-          <button id="layoutGridBtn" onclick="changeLayout('grid')" class="p-1.5 px-2.5 rounded-md bg-white shadow-sm text-slate-700 text-sm transition"><i class="fa-solid fa-border-all"></i></button>
-          <button id="layoutListBtn" onclick="changeLayout('list')" class="p-1.5 px-2.5 rounded-md text-slate-400 hover:text-slate-700 text-sm transition"><i class="fa-solid fa-list"></i></button>
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div class="flex items-center space-x-2">
+            <span class="text-slate-400 text-xs font-medium"><i class="fa-solid fa-arrow-down-a-z mr-1"></i>排序:</span>
+            <select id="sortSelect" onchange="changeSort()" class="text-xs border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+              <option value="latest">最新上架</option>
+              <option value="ending_soon">快將截標</option>
+              <option value="price_asc">價格：由低至高</option>
+              <option value="price_desc">價格：由高至低</option>
+            </select>
+          </div>
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <button id="layoutGridBtn" onclick="changeLayout('grid')" class="p-1.5 px-2.5 rounded-md bg-white shadow-sm text-slate-700 text-sm transition"><i class="fa-solid fa-border-all"></i></button>
+            <button id="layoutListBtn" onclick="changeLayout('list')" class="p-1.5 px-2.5 rounded-md text-slate-400 hover:text-slate-700 text-sm transition"><i class="fa-solid fa-list"></i></button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-    <!-- ==================== [管理員橫幅] ==================== -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
       <div id="adminBanner" class="mt-4 mb-2 hidden bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
         <div class="flex items-start space-x-3">
@@ -149,12 +145,8 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 4：主內容網格] ==================== -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 relative">
-    <!-- 拍賣品列表網格 -->
-
     <div id="auctionsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"></div>
-
     <div id="emptyState" class="hidden text-center py-16">
       <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 text-slate-400 mb-4">
         <i class="fa-solid fa-gavel text-2xl"></i>
@@ -163,7 +155,6 @@
     </div>
   </main>
 
-  <!-- ==================== [模塊 11：懸浮 IG 追蹤按鈕] ==================== -->
   <a href="https://www.instagram.com/one_little_shop" target="_blank" class="fixed z-40 right-4 bottom-6 sm:right-8 sm:bottom-8 group flex items-center justify-end">
     <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block">
       追蹤最新動態 ✨
@@ -173,7 +164,7 @@
     </div>
   </a>
 
-  <!-- ==================== [模塊：流量統計詳情 Modal] ==================== -->
+  <!-- ==================== [流量統計詳情 Modal] ==================== -->
   <div id="statsModal" onclick="if(event.target === this) document.getElementById('statsModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-sm w-full p-6 shadow-2xl modal-enter flex flex-col max-h-[85vh]">
       <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
@@ -186,11 +177,9 @@
     </div>
   </div>
 
-  
-  <!-- ==================== [模塊 5：站內訊息中心 Modal] ==================== -->
+  <!-- ==================== [站內訊息中心 Modal (雙向對話)] ==================== -->
   <div id="messagesModal" onclick="if(event.target === this) document.getElementById('messagesModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-0 shadow-2xl modal-enter flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
-      <!-- Header -->
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 shrink-0">
         <div class="flex items-center space-x-2">
           <button id="msgBackButton" onclick="showMessagesList()" class="hidden text-slate-500 hover:text-amber-600 transition p-1 mr-1">
@@ -201,10 +190,8 @@
         <button onclick="document.getElementById('messagesModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       
-      <!-- List View -->
       <div id="messagesListContainer" class="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50/50"></div>
       
-      <!-- Chat View -->
       <div id="messagesChatContainer" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
         <div id="chatHistory" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
         <div class="p-3 bg-white border-t border-slate-100">
@@ -219,11 +206,11 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 6：管理員發送訊息 Modal] ==================== -->
+  <!-- ==================== [管理員發送一般訊息 Modal] ==================== -->
   <div id="adminMsgModal" onclick="if(event.target === this) closeAdminMsgModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-2xl modal-enter">
       <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-        <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-paper-plane text-amber-500 mr-2"></i>管理員發送站內訊息</h3>
+        <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-paper-plane text-amber-500 mr-2"></i>管理員發起新對話</h3>
         <button onclick="closeAdminMsgModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form onsubmit="handleAdminSendMessage(event)" class="space-y-3">
@@ -232,22 +219,18 @@
           <input type="text" id="adminTargetUuid" required placeholder="例如：123e4567-e89b..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">訊息上款</label>
-          <input type="text" id="adminSenderName" value="系統訊息" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-        </div>
-        <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">訊息內容 *</label>
           <textarea id="adminMsgContent" required rows="4" placeholder="請輸入要發送給該用戶的通知內容..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
         </div>
         <div class="pt-2 flex justify-end space-x-2">
           <button type="button" onclick="closeAdminMsgModal()" class="px-4 py-2 rounded-lg text-xs text-slate-500">取消</button>
-          <button type="submit" id="adminSendBtn" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-lg text-xs font-bold">確認發送</button>
+          <button type="submit" id="adminSendBtn" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-lg text-xs font-bold">確認發起對話</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ==================== [模塊 7：登入與註冊 Modal] ==================== -->
+  <!-- ==================== [登入與個人資料 Modal] ==================== -->
   <div id="loginModal" onclick="if(event.target === this) closeLoginModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-sm w-full p-6 shadow-2xl modal-enter">
       <div class="flex justify-between items-center mb-2">
@@ -265,7 +248,6 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 8：個人資料設定 Modal] ==================== -->
   <div id="profileModal" onclick="if(event.target === this && !document.getElementById('cancelProfileBtn').classList.contains('hidden')) document.getElementById('profileModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-2xl modal-enter max-h-[85vh] overflow-y-auto">
       <div class="flex items-center space-x-3 mb-3 bg-amber-50 p-3 rounded-xl border border-amber-200">
@@ -314,7 +296,7 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 9：官方上架 Modal] ==================== -->
+  <!-- ==================== [官方上架 Modal] ==================== -->
   <div id="uploadModal" onclick="if(event.target === this) closeUploadModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-6 shadow-xl modal-enter my-8 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
@@ -411,7 +393,7 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 10：拍賣詳情與出價 Modal] ==================== -->
+  <!-- ==================== [拍賣詳情與出價 Modal] ==================== -->
   <div id="detailModal" onclick="if(event.target === this) closeDetailModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl modal-enter grid grid-cols-1 md:grid-cols-12 my-8 max-h-[90vh] overflow-y-auto cursor-default relative">
       
@@ -479,7 +461,6 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 12：核心 JavaScript 邏輯] ==================== -->
   <script src="./js/config.js"></script>
   <script src="./js/analytics.js"></script>
   <script src="./js/auth.js"></script>

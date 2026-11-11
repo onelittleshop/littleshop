@@ -124,7 +124,7 @@ async function openDetailModal(id) {
   document.getElementById('detailTitle').textContent = item.title;
   document.getElementById('detailDesc').textContent = item.desc || '暫無詳細描述';
   document.getElementById('detailCat').textContent = item.subCategory ? `${item.category} / ${item.subCategory}` : item.category;
-  document.getElementById('detailLocation').textContent = `${item.method} · ${item.location}`;
+  document.getElementById('detailLocation').textContent = `${item.location}`;
   document.getElementById('detailStartPrice').textContent = item.startPrice;
   document.getElementById('detailIncrement').textContent = item.bidIncrement;
   document.getElementById('detailCurrentPrice').textContent = '$' + item.currentPrice;
@@ -154,7 +154,6 @@ async function openDetailModal(id) {
     bidBtn.textContent = item.isBiddable ? '鎖定不出價' : '開放出價';
     bidBtn.className = item.isBiddable ? 'bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
 
-
     if (item.bids.length > 0) {
       const winnerBid = item.bids[item.bids.length - 1];
       const contactBox = document.getElementById('adminWinnerContactBox');
@@ -169,7 +168,6 @@ async function openDetailModal(id) {
         </div>
       `;
     } else {
-
       document.getElementById('adminWinnerContactBox').classList.add('hidden');
     }
   } else {
@@ -307,7 +305,35 @@ async function toggleAuctionBiddable() {
   openDetailModal(activeDetailId);
 }
 
-// 頁面初始化
+async function notifyWinner(auctionId, winnerId, winnerName) {
+  if (!currentUser?.isAdmin) return;
+  const item = auctions.find(a => a.id === auctionId);
+  if (!item) return;
+
+  const content = `恭喜您！您已成功得標【${item.title}】🎉
+結標金額為：$${item.currentPrice}
+交收地點：${item.location}
+
+請直接回覆此訊息與我們確認交收時間與細節，謝謝！`;
+
+  const { error } = await sb.from('messages').insert([{
+    user_id: winnerId,
+    sender_id: currentUser.id,
+    receiver_id: winnerId,
+    sender_name: '官方管理員',
+    receiver_name: winnerName,
+    auction_id: auctionId,
+    content: content
+  }]);
+
+  if (error) {
+    alert('發送通知失敗：' + error.message);
+  } else {
+    alert('✅ 已成功發送得標通知與專屬對話視窗給買家！');
+    fetchUserMessages();
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (sb) {
     try {
@@ -333,31 +359,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   await fetchAuctions();
 });
 
+function openAdminMsgModal() { 
+  document.getElementById('adminMsgModal').classList.remove('hidden'); 
+}
+function closeAdminMsgModal() { document.getElementById('adminMsgModal').classList.add('hidden'); }
 
-async function notifyWinner(auctionId, winnerId, winnerName) {
-  if (!currentUser?.isAdmin) return;
-  const item = auctions.find(a => a.id === auctionId);
-  if (!item) return;
-
-  const content = `恭喜您！您已成功得標【${item.title}】🎉
-結標金額為：$${item.currentPrice}
-交收方式：${item.method} (${item.location})
-
-請直接回覆此訊息與我們確認交收時間與細節，謝謝！`;
+async function handleAdminSendMessage(e) {
+  e.preventDefault();
+  if (!currentUser?.isAdmin) return alert('權限不足');
+  const targetUuid = document.getElementById('adminTargetUuid').value.trim();
+  const senderName = document.getElementById('adminSenderName').value.trim() || '系統訊息';
+  const content = document.getElementById('adminMsgContent').value.trim();
 
   const { error } = await sb.from('messages').insert([{
+    user_id: targetUuid,
     sender_id: currentUser.id,
-    receiver_id: winnerId,
-    sender_name: '官方管理員',
-    receiver_name: winnerName,
-    auction_id: auctionId,
+    receiver_id: targetUuid,
+    sender_name: senderName,
+    receiver_name: '用戶',
     content: content
   }]);
 
   if (error) {
-    alert('發送通知失敗：' + error.message);
+    alert('發送失敗：' + error.message);
   } else {
-    alert('✅ 已成功發送得標通知與對話視窗給買家！');
+    alert('✅ 訊息已成功發送給指定用戶！');
+    closeAdminMsgModal();
+    document.getElementById('adminMsgContent').value = '';
+    document.getElementById('adminTargetUuid').value = '';
     fetchUserMessages();
   }
 }
