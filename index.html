@@ -74,8 +74,11 @@
     </div>
   </header>
 
-  <!-- ==================== [模塊 2.5：滾動公告欄] ==================== -->
-  <div class="bg-amber-50 border-b border-amber-100 py-1.5 sm:py-2 text-xs sm:text-sm text-amber-900 flex items-center z-20">
+  
+  <!-- ==================== [全局固定工具列 (公告 + 分類 + 管理員)] ==================== -->
+  <div class="sticky top-16 z-20 bg-slate-50 flex flex-col shadow-sm">
+    <!-- ==================== [模塊 2.5：滾動公告欄] ==================== -->
+    <div class="bg-amber-50 border-b border-amber-100 py-1.5 sm:py-2 text-xs sm:text-sm text-amber-900 flex items-center z-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center">
       <i class="fa-solid fa-bullhorn text-amber-500 mr-2 shrink-0"></i>
       <div class="marquee-container">
@@ -86,8 +89,8 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 3：視角、分類、排序與版面切換列] ==================== -->
-  <div class="bg-white border-b border-slate-200 shadow-sm relative z-10">
+    <!-- ==================== [模塊 3：視角、分類、排序與版面切換列] ==================== -->
+    <div class="bg-white border-b border-slate-200 shadow-sm relative z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex space-x-2">
@@ -120,32 +123,36 @@
     </div>
   </div>
 
-  <!-- ==================== [模塊 4：主內容網格與管理員橫幅] ==================== -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-    
-    <div id="adminBanner" class="mb-6 hidden bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div class="flex items-start space-x-3">
-        <i class="fa-solid fa-crown text-amber-600 text-xl mt-1 sm:mt-0"></i>
-        <div class="w-full">
-          <div class="flex flex-wrap items-center gap-2 mb-1">
-            <h3 class="text-sm font-bold text-amber-950">官方管理員模式</h3>
-            <button onclick="openStatsModal()" class="bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-0.5 rounded font-bold text-[10px] cursor-pointer shadow-sm transition flex items-center">
-              主頁今日瀏覽：<span id="adminVisitCount" class="mx-1">0</span> 人 <i class="fa-solid fa-magnifying-glass-chart ml-1"></i>
-            </button>
-          </div>
-          <p class="text-[11px] sm:text-xs text-amber-800">可上架拍賣品、隱藏物品、控制出價權限，並發送站內訊息。</p>
-          <div id="adminDeviceStats" class="mt-2 text-[10px] text-amber-900/70 font-semibold bg-amber-100/50 inline-block px-2 py-1 rounded">
-            設備分佈載入中...
+    <!-- ==================== [管理員橫幅] ==================== -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div id="adminBanner" class="mt-4 mb-2 hidden bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-start space-x-3">
+          <i class="fa-solid fa-crown text-amber-600 text-xl mt-1 sm:mt-0"></i>
+          <div class="w-full">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <h3 class="text-sm font-bold text-amber-950">官方管理員模式</h3>
+              <button onclick="openStatsModal()" class="bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-0.5 rounded font-bold text-[10px] cursor-pointer shadow-sm transition flex items-center">
+                主頁今日瀏覽：<span id="adminVisitCount" class="mx-1">0</span> 人 <i class="fa-solid fa-magnifying-glass-chart ml-1"></i>
+              </button>
+            </div>
+            <p class="text-[11px] sm:text-xs text-amber-800">可上架拍賣品、隱藏物品、控制出價權限，並發送站內訊息。</p>
+            <div id="adminDeviceStats" class="mt-2 text-[10px] text-amber-900/70 font-semibold bg-amber-100/50 inline-block px-2 py-1 rounded">
+              設備分佈載入中...
+            </div>
           </div>
         </div>
-      </div>
-      <div class="flex space-x-2 shrink-0 self-end sm:self-auto">
-        <button onclick="openAdminMsgModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shrink-0"><i class="fa-solid fa-paper-plane mr-1"></i> 發送訊息</button>
-        <button onclick="openUploadModal()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shrink-0">+ 新增拍賣品</button>
+        <div class="flex space-x-2 shrink-0 self-end sm:self-auto">
+          <button onclick="openAdminMsgModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shrink-0"><i class="fa-solid fa-paper-plane mr-1"></i> 發送訊息</button>
+          <button onclick="openUploadModal()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shrink-0">+ 新增拍賣品</button>
+        </div>
       </div>
     </div>
+  </div>
 
+  <!-- ==================== [模塊 4：主內容網格] ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 relative">
     <!-- 拍賣品列表網格 -->
+
     <div id="auctionsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"></div>
 
     <div id="emptyState" class="hidden text-center py-16">

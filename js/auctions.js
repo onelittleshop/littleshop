@@ -5,21 +5,40 @@ let currentDetailImageIdx = 0;
 let detailInterval = null;
 
 function parseAuctionImages(item) {
-  const raw = item.image_url ?? item.images;
+  let raw = item.image_url ?? item.images;
   if (!raw) return [];
-  if (Array.isArray(raw)) return raw.filter(Boolean);
+  
+  // 嘗試多次解析，避免被包了雙重字串 (例如 '"["url"]"')
   if (typeof raw === 'string') {
-    const trimmed = raw.trim();
-    if (!trimmed) return [];
+    let trimmed = raw.trim();
     if (trimmed.startsWith('[')) {
       try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        raw = JSON.parse(trimmed);
       } catch (e) {
+        // 若無法解析成陣列，當作單張網址
+        return [trimmed];
       }
+    } else {
+      return [trimmed];
     }
-    return [trimmed];
   }
+
+  // 確保現在是陣列，進行過濾
+  if (Array.isArray(raw)) {
+    let validImages = [];
+    raw.forEach(img => {
+      if (typeof img === 'string' && img.trim() !== '') {
+        validImages.push(img.trim());
+      } else if (typeof img === 'object' && img !== null) {
+        // 如果傳入了物件，例如 { url: '...' } 或 { src: '...' }
+        if (img.url) validImages.push(img.url);
+        else if (img.src) validImages.push(img.src);
+        else if (img.image_url) validImages.push(img.image_url);
+      }
+    });
+    return validImages;
+  }
+  
   return [];
 }
 
