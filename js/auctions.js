@@ -8,29 +8,21 @@ function parseAuctionImages(item) {
   let raw = item.image_url ?? item.images;
   if (!raw) return [];
   
-  // 嘗試多次解析，避免被包了雙重字串 (例如 '"["url"]"')
   if (typeof raw === 'string') {
     let trimmed = raw.trim();
     if (trimmed.startsWith('[')) {
-      try {
-        raw = JSON.parse(trimmed);
-      } catch (e) {
-        // 若無法解析成陣列，當作單張網址
-        return [trimmed];
-      }
+      try { raw = JSON.parse(trimmed); } 
+      catch (e) { return [trimmed]; }
     } else {
       return [trimmed];
     }
   }
 
-  // 確保現在是陣列，進行過濾
   if (Array.isArray(raw)) {
     let validImages = [];
     raw.forEach(img => {
-      if (typeof img === 'string' && img.trim() !== '') {
-        validImages.push(img.trim());
-      } else if (typeof img === 'object' && img !== null) {
-        // 如果傳入了物件，例如 { url: '...' } 或 { src: '...' }
+      if (typeof img === 'string' && img.trim() !== '') validImages.push(img.trim());
+      else if (typeof img === 'object' && img !== null) {
         if (img.url) validImages.push(img.url);
         else if (img.src) validImages.push(img.src);
         else if (img.image_url) validImages.push(img.image_url);
@@ -38,7 +30,6 @@ function parseAuctionImages(item) {
     });
     return validImages;
   }
-  
   return [];
 }
 
@@ -52,7 +43,7 @@ async function fetchAuctions() {
   if (!error && data) {
     auctions = data.map(item => {
       const parsedImages = parseAuctionImages(item);
-      const isVisible = item.is_visible !== undefined ? item.is_visible : (item.status !== 'hidden');
+      const isVisible = item.is_visible !== undefined ? item.is_visible : true;
       return {
         id: item.id,
         title: item.title,
@@ -62,7 +53,6 @@ async function fetchAuctions() {
         bidIncrement: Number(item.bid_increment ?? 5),
         currentPrice: Number(item.current_price ?? item.start_price ?? 0),
         endTime: item.end_time,
-        method: item.method || '面交',
         location: item.location || '葵興地鐵站',
         desc: item.description || item.desc || '',
         images: parsedImages,
@@ -112,7 +102,7 @@ function switchCategory(cat) {
 
 function switchView(view) {
   currentView = view;
-  document.getElementById('tabAll').className = view === 'all' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition' : 'px-4 py-1.5 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 transition';
+  document.getElementById('tabAll').className = view === 'all' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition' : 'px-4 py-1.5 rounded-full text-sm font-medium text-slate-900 shadow-sm transition';
   document.getElementById('tabMyBids').className = view === 'my_bids' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition' : 'px-4 py-1.5 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 transition';
   renderAuctions();
 }
@@ -180,7 +170,6 @@ function renderAuctions() {
             <div>
               <div class="flex flex-wrap items-center gap-1 mb-1">
                 <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
-              <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
                 <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
               </div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
@@ -249,6 +238,7 @@ async function handleCreateAuction(e) {
     console.warn('ensure_category_exists 略過:', err);
   }
 
+  // Schema matching for auctions table
   const newItem = {
     title,
     category,
@@ -257,12 +247,13 @@ async function handleCreateAuction(e) {
     bid_increment: bidIncrement,
     current_price: startPrice,
     end_time: endTime,
-    method,
-    location,
+    location: `${method} · ${location}`,
     description: desc,
     image_url: JSON.stringify(tempImagesBase64),
     is_visible: true,
-    is_biddable: true
+    is_biddable: true,
+    seller_id: currentUser.id,
+    seller_name: currentUser.nickname
   };
 
   const { error } = await sb.from('auctions').insert([newItem]);
@@ -302,8 +293,12 @@ async function placeBid(itemId) {
     return alert('出價失敗：' + bidError.message);
   }
 
+  // Update auction table accurately using schema fields
   const { error: updateError } = await sb.from('auctions').update({
-    current_price: inputAmt
+    current_price: inputAmt,
+    highest_bidder_id: currentUser.id,
+    highest_bidder_name: currentUser.nickname || '匿名買家',
+    bid_count: (item.bids ? item.bids.length : 0) + 1
   }).eq('id', itemId);
 
   if (updateError) {

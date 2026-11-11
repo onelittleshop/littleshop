@@ -32,31 +32,20 @@ async function logActivity(pageType, targetId = null) {
   }
 
   try {
-    const { error: rpcError } = await sb.rpc('log_activity', {
-      p_user_id: userId,
-      p_guest_session: session,
-      p_device_type: device,
-      p_page_type: pageType,
-      p_target_id: targetId,
-      p_title: itemTitle
-    });
-
-    if (rpcError) {
-      const { error: insertError } = await sb.from('activity_logs').insert([{
-        user_id: userId,
-        guest_session: session,
-        device_type: device,
-        page_type: pageType,
-        target_id: targetId,
-        title: itemTitle
-      }]);
-      
-      if (insertError) {
-        await sb.rpc('log_daily_visit', { device_type: device });
-      }
+    // 直接寫入 public.activity_logs 表，欄位 100% 對應資料庫定義
+    const { error } = await sb.from('activity_logs').insert([{
+      user_id: userId,
+      guest_session: session,
+      device_type: device,
+      page_type: pageType,
+      target_id: targetId,
+      title: itemTitle
+    }]);
+    if (error) {
+      console.warn('activity_logs 寫入提醒:', error.message);
     }
   } catch (err) {
-    console.warn('Analytics log failed:', err);
+    console.warn('Analytics log error:', err);
   }
 }
 
@@ -64,35 +53,34 @@ async function updateAdminStatsUI() {
   if (!currentUser?.isAdmin || !sb) return;
   try {
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Hong_Kong' });
+    const startOfDayHK = `${todayStr}T00:00:00+08:00`;
 
-    const { data: visitData } = await sb
-      .from('daily_visits')
-      .select('visit_count')
-      .eq('visit_date', todayStr)
-      .maybeSingle();
+    // 直接從 activity_logs 統計今日瀏覽與設備分佈
+    const { data: todayLogs, error } = await sb
+      .from('activity_logs')
+      .select('device_type, page_type')
+      .gte('created_at', startOfDayHK);
 
     const visitEl = document.getElementById('adminVisitCount');
-    if (visitEl) {
-      visitEl.textContent = visitData ? visitData.visit_count : 0;
-    }
-
-    const { data: devData } = await sb
-      .from('homepage_device_stats')
-      .select('device_type, visit_count')
-      .eq('visit_date', todayStr);
-
     const devEl = document.getElementById('adminDeviceStats');
-    if (devEl) {
-      if (devData && devData.length > 0) {
+
+    if (!error && todayLogs) {
+      const homeLogs = todayLogs.filter(l => l.page_type === 'home');
+      const targetList = homeLogs.length > 0 ? homeLogs : todayLogs;
+
+      if (visitEl) {
+        visitEl.textContent = targetList.length;
+      }
+
+      if (devEl) {
         let mobile = 0, tablet = 0, desktop = 0;
-        devData.forEach(d => {
-          if (d.device_type === 'mobile') mobile += d.visit_count;
-          if (d.device_type === 'tablet') tablet += d.visit_count;
-          if (d.device_type === 'desktop') desktop += d.visit_count;
+        targetList.forEach(d => {
+          const dt = (d.device_type || '').toLowerCase();
+          if (dt === 'mobile') mobile++;
+          else if (dt === 'tablet') tablet++;
+          else desktop++;
         });
         devEl.textContent = `今日設備分佈 ➔ 手機: ${mobile} ｜ 平板: ${tablet} ｜ 電腦: ${desktop}`;
-      } else {
-        devEl.textContent = '設備分佈統計 ➔ 尚無今日數據';
       }
     }
   } catch (err) {
@@ -108,7 +96,7 @@ async function openStatsModal() {
   
   const { data, error } = await sb.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(50);
   if (error || !data) {
-    container.innerHTML = '<div class="text-center py-4 text-rose-500 text-xs">載入失敗</div>';
+    container.innerHTML = '<div class="text-center py-4 text-rose-500 text-xs">載入失敗：' + (error?.message || '') + '</div>';
     return;
   }
   
@@ -124,7 +112,7 @@ async function openStatsModal() {
         ${log.title ? `<span class="text-slate-500 ml-1 truncate block sm:inline">${log.title}</span>` : ''}
         <span class="text-[10px] text-slate-400 block">${new Date(log.created_at).toLocaleString()}</span>
       </div>
-      <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 shrink-0">${log.device_type || 'Unknown'}</span>
+      <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 shrink-0">${log.device_type || 'desktop'}</span>
     </div>
   `).join('');
 }
