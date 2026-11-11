@@ -178,7 +178,11 @@ function renderAuctions() {
           </div>
           <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
             <div>
-              <div class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded inline-block mb-1">${catLabel}</div>
+              <div class="flex flex-wrap items-center gap-1 mb-1">
+                <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
+              <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
+                <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
+              </div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
             <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
@@ -203,6 +207,7 @@ function renderAuctions() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-2 mb-1">
               <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
+              <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
               <span class="text-[10px] ${isEnded ? 'text-rose-500 font-bold' : 'text-emerald-600 font-bold'}">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : '競標中')}</span>
             </div>
             <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">${item.title}</h3>
