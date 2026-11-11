@@ -389,3 +389,27 @@ async function handleAdminSendMessage(e) {
     fetchUserMessages();
   }
 }
+
+let isCustomCategoryMode = false;
+function toggleNewCategoryInput() {
+  isCustomCategoryMode = !isCustomCategoryMode;
+  const selectEl = document.getElementById('itemCategorySelect');
+  const customEl = document.getElementById('itemCategoryCustom');
+  const btnText = document.getElementById('toggleCatBtnText');
+
+  if (isCustomCategoryMode) {
+    selectEl.classList.add('hidden');
+    customEl.classList.remove('hidden');
+    customEl.value = '';
+    customEl.focus();
+    btnText.textContent = '返回選擇現有';
+  } else {
+    customEl.classList.add('hidden');
+    selectEl.classList.remove('hidden');
+    btnText.textContent = '新增分類';
+  }
+}
+
+function handleCategorySelectChange(selectEl) {
+  // Can be used if needed
+}

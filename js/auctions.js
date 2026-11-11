@@ -87,9 +87,10 @@ function renderCategories() {
     return `<button onclick="switchCategory('${c}')" class="px-3 py-1.5 rounded-full text-xs font-medium shrink-0 transition ${active ? 'bg-amber-500 text-white font-bold shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${label}</button>`;
   }).join('');
 
-  const datalist = document.getElementById('categoryOptions');
-  if (datalist) {
-    datalist.innerHTML = cats.filter(c => c !== 'all').map(c => `<option value="${c}">`).join('');
+  const selectEl = document.getElementById('itemCategorySelect');
+  if (selectEl) {
+    const validCats = cats.filter(c => c !== 'all');
+    selectEl.innerHTML = `<option value="" disabled selected>請選擇現有分類</option>` + validCats.map(c => `<option value="${c}">${c}</option>`).join('');
   }
 }
 
@@ -218,8 +219,15 @@ async function handleCreateAuction(e) {
   if (tempImagesBase64.length === 0) return alert('請至少上傳一張相片');
 
   const title = document.getElementById('itemTitle').value.trim();
-  const category = document.getElementById('itemCategory').value.trim();
-  const subCategory = document.getElementById('itemSubCategory').value.trim();
+  let category = '';
+  if (typeof isCustomCategoryMode !== 'undefined' && isCustomCategoryMode) {
+    category = document.getElementById('itemCategoryCustom').value.trim();
+  } else {
+    category = document.getElementById('itemCategorySelect').value.trim();
+  }
+  const subCategory = document.getElementById('itemSubCategory')?.value.trim() || '';
+
+  if (!category) return alert('請選擇或輸入分類！');
   const startPrice = Number(document.getElementById('startPrice').value);
   const bidIncrement = Number(document.getElementById('bidIncrement').value);
   const endTimeInput = document.getElementById('endTime').value;

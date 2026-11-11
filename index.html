@@ -331,10 +331,22 @@
             <input type="text" id="itemTitle" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
           </div>
           
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">分類 *</label>
-            <input type="text" id="itemCategory" list="categoryOptions" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" placeholder="選擇或輸入">
-            <datalist id="categoryOptions"></datalist>
+                    <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold text-slate-500">分類 *</label>
+              <button type="button" onclick="toggleNewCategoryInput()" class="text-[11px] text-amber-600 font-bold hover:underline">
+                <i class="fa-solid fa-plus mr-0.5"></i><span id="toggleCatBtnText">新增分類</span>
+              </button>
+            </div>
+            
+            <!-- 既有分類下拉選單 -->
+            <select id="itemCategorySelect" onchange="handleCategorySelectChange(this)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+              <option value="" disabled selected>請選擇分類</option>
+            </select>
+
+            <!-- 手動輸入新分類輸入框 (預設隱藏) -->
+            <input type="text" id="itemCategoryCustom" class="hidden w-full mt-1.5 px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="請輸入新分類名稱">
+          </div>
             
             <div class="mt-1 text-right">
               <button type="button" onclick="document.getElementById('subCatWrapper').classList.toggle('hidden')" class="text-[10px] text-amber-600 font-medium hover:underline"><i class="fa-solid fa-plus mr-0.5"></i>細分類(選填)</button>
