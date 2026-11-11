@@ -1,7 +1,10 @@
 // ==================== [模塊：Auth & User Profile] ====================
 async function oauthLogin(provider) {
   if (!sb) return alert('請先填入 Supabase 憑證');
-  const { error } = await sb.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + window.location.pathname } });
+  const { error } = await sb.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
   if (error) alert('OAuth 登入錯誤：' + error.message);
 }
 
@@ -21,7 +24,7 @@ async function loadUserProfile(userId) {
         nickname: data.nickname || '',
         phone: data.phone || '',
         avatar_url: data.avatar_url || '',
-        isAdmin: data.is_admin || false
+        isAdmin: Boolean(data.is_admin)
       };
       if (!data.nickname) {
         openProfileModal(true);
@@ -36,6 +39,7 @@ async function loadUserProfile(userId) {
     openProfileModal(true);
   }
   if (typeof updateAuthUI === 'function') updateAuthUI();
+  await fetchUserMessages();
 }
 
 function previewAndCompressAvatar(event) {
@@ -77,7 +81,10 @@ async function handleProfileSave(e) {
 
   const finalAvatar = tempAvatarBase64 || currentUser.avatar_url || '';
   const { error } = await sb.from('profiles').upsert({
-    id: currentUser.id, nickname: nicknameInput, phone: phoneInput, avatar_url: finalAvatar
+    id: currentUser.id,
+    nickname: nicknameInput,
+    phone: phoneInput,
+    avatar_url: finalAvatar
   });
 
   if (error) return alert('儲存失敗：' + error.message);
@@ -156,6 +163,26 @@ async function fetchUserMessages() {
 async function openMessagesModal() {
   await logActivity('messages');
   document.getElementById('messagesModal').classList.remove('hidden');
+  const container = document.getElementById('messagesListContainer');
+  if (!userMessages || userMessages.length === 0) {
+    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">目前沒有任何站內訊息</div>';
+    return;
+  }
+  container.innerHTML = userMessages.map(m => `
+    <div class="p-3.5 rounded-xl border ${m.is_read ? 'bg-slate-50 border-slate-200' : 'bg-amber-50/70 border-amber-200'} text-xs space-y-1">
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-slate-900">${m.sender_name || '系統訊息'}</span>
+        <span class="text-[10px] text-slate-400">${new Date(m.created_at).toLocaleString()}</span>
+      </div>
+      <p class="text-slate-700 whitespace-pre-line">${m.content}</p>
+    </div>
+  `).join('');
+
+  const unreadIds = userMessages.filter(m => !m.is_read).map(m => m.id);
+  if (unreadIds.length > 0 && sb) {
+    await sb.from('messages').update({ is_read: true }).in('id', unreadIds);
+    fetchUserMessages();
+  }
 }
 
 function openAdminMsgModal() { 

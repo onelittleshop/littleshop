@@ -1,4 +1,3 @@
-
 // ==================== [模塊：UI & Modals] ====================
 function openLoginModal() {
   document.getElementById('loginModal').classList.remove('hidden');
@@ -21,7 +20,18 @@ function openProfileModal(isForced) {
     title.textContent = '修改個人資料';
   }
   
-  document.getElementById('profileNickname').value = currentUser?.nickname || '';
+  const nickInput = document.getElementById('profileNickname');
+  nickInput.value = currentUser?.nickname || '';
+  if (currentUser?.nickname) {
+    nickInput.readOnly = true;
+    nickInput.classList.add('bg-slate-100', 'text-slate-500');
+    document.getElementById('nicknameLockHint')?.classList.remove('hidden');
+  } else {
+    nickInput.readOnly = false;
+    nickInput.classList.remove('bg-slate-100', 'text-slate-500');
+    document.getElementById('nicknameLockHint')?.classList.add('hidden');
+  }
+
   document.getElementById('profilePhone').value = currentUser?.phone || '';
   document.getElementById('avatarPreviewContainer').innerHTML = currentUser?.avatar_url ? 
     `<img src="${currentUser.avatar_url}" class="w-full h-full object-cover">` : 
@@ -31,9 +41,10 @@ function openProfileModal(isForced) {
 function openUploadModal() {
   if (!currentUser?.isAdmin) return alert('權限不足');
   document.getElementById('uploadModal').classList.remove('hidden');
-  const tomorrow = new Date(Date.now() + 86400000);
-  tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
-  document.getElementById('endTime').value = tomorrow.toISOString().slice(0, 16);
+  const now = new Date();
+  now.setHours(23, 59, 0, 0);
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('endTime').value = now.toISOString().slice(0, 16);
 }
 
 function closeUploadModal() {
@@ -59,7 +70,7 @@ function previewSelectedImages(event) {
       img.onload = function() {
         const canvas = document.createElement('canvas');
         let width = img.width, height = img.height;
-        const MAX = 600;
+        const MAX = 800;
         if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } }
         else { if (height > MAX) { width *= MAX / height; height = MAX; } }
         canvas.width = width; canvas.height = height;
@@ -108,12 +119,12 @@ async function openDetailModal(id) {
   const item = auctions.find(a => a.id === id);
   if (!item) return;
 
-  await logActivity('view_item');
+  await logActivity('auction_detail', id);
   document.getElementById('detailModal').classList.remove('hidden');
   document.getElementById('detailTitle').textContent = item.title;
   document.getElementById('detailDesc').textContent = item.desc || '暫無詳細描述';
   document.getElementById('detailCat').textContent = item.subCategory ? `${item.category} / ${item.subCategory}` : item.category;
-  document.getElementById('detailLocation').textContent = item.location;
+  document.getElementById('detailLocation').textContent = `${item.method} · ${item.location}`;
   document.getElementById('detailStartPrice').textContent = item.startPrice;
   document.getElementById('detailIncrement').textContent = item.bidIncrement;
   document.getElementById('detailCurrentPrice').textContent = '$' + item.currentPrice;
@@ -122,35 +133,32 @@ async function openDetailModal(id) {
   const highestBidder = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderName : '暫無出價';
   document.getElementById('detailHighestBidder').textContent = '領先者：' + highestBidder;
 
-  // Render images
   currentDetailImageIdx = 0;
   renderDetailImages(item.images);
 
-  // Status badge
-  const isEnded = new Date() > new Date(item.endTime) || item.status === 'ended';
+  const isEnded = new Date() > new Date(item.endTime);
   const badge = document.getElementById('detailStatusBadge');
-  badge.textContent = isEnded ? '已截標' : '競標中';
-  badge.className = `absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold z-20 text-white ${isEnded ? 'bg-rose-500' : 'bg-amber-500'}`;
+  badge.textContent = !item.isVisible ? '已隱藏' : (isEnded ? '已截標' : '競標中');
+  badge.className = `absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold z-20 text-white ${!item.isVisible ? 'bg-slate-800' : (isEnded ? 'bg-rose-500' : 'bg-amber-500')}`;
 
-  // Admin Actions
   const adminGroup = document.getElementById('adminActionGroup');
   if (currentUser?.isAdmin) {
     adminGroup.classList.remove('hidden');
-    document.getElementById('adminItemViewBadge').innerHTML = `<i class="fa-regular fa-eye mr-1"></i>狀態: ${item.status}`;
+    document.getElementById('adminItemViewBadge').innerHTML = `<i class="fa-regular fa-eye mr-1"></i>瀏覽: ${item.viewCount || 0} 次`;
     
     const visBtn = document.getElementById('adminVisibilityBtn');
-    visBtn.textContent = item.status === 'hidden' ? '解除隱藏' : '隱藏商品';
-    visBtn.className = item.status === 'hidden' ? 'bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
+    visBtn.textContent = !item.isVisible ? '解除隱藏' : '隱藏商品';
+    visBtn.className = !item.isVisible ? 'bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
 
     const bidBtn = document.getElementById('adminBiddableBtn');
     bidBtn.textContent = item.isBiddable ? '鎖定不出價' : '開放出價';
     bidBtn.className = item.isBiddable ? 'bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
 
-    if (isEnded && item.bids.length > 0) {
+    if (item.bids.length > 0) {
       const winnerBid = item.bids[item.bids.length - 1];
       const contactBox = document.getElementById('adminWinnerContactBox');
       contactBox.classList.remove('hidden');
-      contactBox.innerHTML = `<strong>🏆 得標者：</strong> ${winnerBid.bidderName} | <strong>電話：</strong> ${winnerBid.bidderPhone || '未登記'} <button onclick="copyWinnerInfo('${winnerBid.bidderName}', '${winnerBid.bidderPhone}')" class="ml-2 bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px]">複製聯絡資訊</button>`;
+      contactBox.innerHTML = `<strong>🏆 最高出價者：</strong> ${winnerBid.bidderName} <span class="text-[10px] text-slate-500 ml-1">(UUID: ${winnerBid.bidderId})</span>`;
     } else {
       document.getElementById('adminWinnerContactBox').classList.add('hidden');
     }
@@ -159,7 +167,6 @@ async function openDetailModal(id) {
     document.getElementById('adminWinnerContactBox').classList.add('hidden');
   }
 
-  // Bid Action Area
   const actionArea = document.getElementById('bidActionArea');
   if (!currentUser) {
     actionArea.innerHTML = `<button onclick="openLoginModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">登入參與競標</button>`;
@@ -168,17 +175,16 @@ async function openDetailModal(id) {
   } else if (!item.isBiddable) {
     actionArea.innerHTML = `<div class="text-center py-3 bg-amber-50 text-amber-800 rounded-xl font-bold text-sm">管理員已暫停本場競標</div>`;
   } else {
-    const nextMin = item.currentPrice + item.bidIncrement;
+    const nextMin = item.bids.length === 0 ? item.startPrice : (item.currentPrice + item.bidIncrement);
     actionArea.innerHTML = `
       <div class="flex items-center space-x-2">
         <input type="number" id="bidAmountInput" min="${nextMin}" value="${nextMin}" class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-base font-bold text-slate-900 bg-white">
-        <button onclick="placeBid('${item.id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm transition shrink-0">確認出價 (+$${item.bidIncrement})</button>
+        <button onclick="placeBid('${item.id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm transition shrink-0">確認出價</button>
       </div>
-      <p class="text-[10px] text-slate-400 mt-1.5">最低出價需達 $${nextMin} (當前價 + 每口價)</p>
+      <p class="text-[10px] text-slate-400 mt-1.5">最低出價需達 $${nextMin} (每口加價 +$${item.bidIncrement})</p>
     `;
   }
 
-  // Bid History
   const historyList = document.getElementById('bidHistoryList');
   historyList.innerHTML = item.bids.length === 0 ? '<div class="text-slate-400 text-center py-4 text-xs">暫無出價紀錄</div>' :
     item.bids.slice().reverse().map((b, i) => `
@@ -189,12 +195,11 @@ async function openDetailModal(id) {
         </div>
         <div class="text-right">
           <span class="font-extrabold text-amber-600 text-xs">$${b.amount}</span>
-          <span class="text-[10px] text-slate-400 block">${new Date(b.time).toLocaleTimeString()}</span>
+          <span class="text-[10px] text-slate-400 block">${new Date(b.time).toLocaleString()}</span>
         </div>
       </div>
     `).join('');
 
-  // Countdown timer
   if (detailInterval) clearInterval(detailInterval);
   updateCountdown(item.endTime);
   detailInterval = setInterval(() => updateCountdown(item.endTime), 1000);
@@ -207,14 +212,14 @@ function renderDetailImages(images) {
   const nextBtn = document.getElementById('nextImgBtn');
 
   if (!images || images.length === 0) {
-    container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 font-bold text-sm">暫無圖片</div>`;
+    container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 font-bold text-sm"><img src="./logo.png" class="w-full h-full object-contain p-8"></div>`;
     indicator.classList.add('hidden');
     prevBtn.classList.add('hidden');
     nextBtn.classList.add('hidden');
     return;
   }
 
-  container.innerHTML = images.map(src => `<div class="w-full h-full shrink-0 snap-center"><img src="${src}" class="w-full h-full object-cover"></div>`).join('');
+  container.innerHTML = images.map(src => `<div class="w-full h-full shrink-0 snap-center"><img src="${src}" onerror="this.src='./logo.png'" class="w-full h-full object-cover"></div>`).join('');
   
   if (images.length > 1) {
     indicator.classList.remove('hidden');
@@ -255,11 +260,12 @@ function updateCountdown(endTimeStr) {
     return;
   }
 
-  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
-  text.textContent = `剩餘 ${hours}時 ${mins}分 ${secs}秒`;
+  text.textContent = days > 0 ? `剩餘 ${days}天 ${hours}時 ${mins}分 ${secs}秒` : `剩餘 ${hours}時 ${mins}分 ${secs}秒`;
   box.className = 'text-xs font-bold flex items-center space-x-1.5 text-amber-600';
 }
 
@@ -269,52 +275,13 @@ function closeDetailModal() {
   activeDetailId = null;
 }
 
-async function placeBid(itemId) {
-  if (!currentUser) return openLoginModal();
-  if (!currentUser.phone) {
-    alert('⚠️ 您的帳號尚未綁定香港電話，請先前往「修改資料」綁定電話後才能下標！');
-    return openProfileModal(false);
-  }
-
-  const item = auctions.find(a => a.id === itemId);
-  if (!item) return;
-
-  const inputAmt = Number(document.getElementById('bidAmountInput').value);
-  const minRequired = item.currentPrice + item.bidIncrement;
-  if (inputAmt < minRequired) {
-    return alert(`出價金額不得低於 $${minRequired}`);
-  }
-
-  const newBid = {
-    bidderId: currentUser.id,
-    bidderName: currentUser.nickname || '匿名買家',
-    bidderPhone: currentUser.phone,
-    amount: inputAmt,
-    time: new Date().toISOString()
-  };
-
-  const updatedBids = [...item.bids, newBid];
-  const { error } = await sb.from('auctions').update({
-    current_price: inputAmt,
-    bids: updatedBids
-  }).eq('id', itemId);
-
-  if (error) {
-    alert('出價失敗：' + error.message);
-  } else {
-    alert('🎉 出價成功！');
-    await logActivity('place_bid');
-    await fetchAuctions();
-    openDetailModal(itemId);
-  }
-}
-
 async function toggleAuctionVisibility() {
   if (!currentUser?.isAdmin || !activeDetailId) return;
   const item = auctions.find(a => a.id === activeDetailId);
   if (!item) return;
-  const newStatus = item.status === 'hidden' ? 'active' : 'hidden';
-  await sb.from('auctions').update({ status: newStatus }).eq('id', activeDetailId);
+  const newVisible = !item.isVisible;
+  const { error } = await sb.from('auctions').update({ is_visible: newVisible }).eq('id', activeDetailId);
+  if (error) return alert('更新狀態失敗：' + error.message);
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
@@ -324,47 +291,23 @@ async function toggleAuctionBiddable() {
   const item = auctions.find(a => a.id === activeDetailId);
   if (!item) return;
   const newBiddable = !item.isBiddable;
-  await sb.from('auctions').update({ is_biddable: newBiddable }).eq('id', activeDetailId);
+  const { error } = await sb.from('auctions').update({ is_biddable: newBiddable }).eq('id', activeDetailId);
+  if (error) return alert('更新狀態失敗：' + error.message);
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
 
-function copyWinnerInfo(name, phone) {
-  const text = `得標者：${name} | 電話：${phone}`;
-  navigator.clipboard.writeText(text).then(() => {
-    alert('✅ 得標者資訊已複製到剪貼簿！');
-  });
-}
-
-// Global init on DOMContentLoaded
+// 頁面初始化
 document.addEventListener('DOMContentLoaded', async () => {
   if (sb) {
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session?.user) {
-        // Check if admin email or hardcoded admin check
-        const email = session.user.email || '';
-        const isAdmin = email.includes('admin') || session.user.id === 'YOUR_ADMIN_UUID_HERE'; // Or configure as needed
-        currentUser = {
-          id: session.user.id,
-          nickname: '',
-          phone: '',
-          avatar_url: session.user.user_metadata?.avatar_url || '',
-          isAdmin: session.user.user_metadata?.is_admin || false
-        };
-        // Explicitly load profile
         await loadUserProfile(session.user.id);
       }
 
       sb.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
-          currentUser = {
-            id: session.user.id,
-            nickname: '',
-            phone: '',
-            avatar_url: session.user.user_metadata?.avatar_url || '',
-            isAdmin: session.user.user_metadata?.is_admin || false
-          };
           await loadUserProfile(session.user.id);
         } else {
           currentUser = null;
@@ -376,5 +319,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  await logActivity('home');
   await fetchAuctions();
 });
