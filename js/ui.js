@@ -138,8 +138,8 @@ async function openDetailModal(id) {
 
   const isEnded = new Date() > new Date(item.endTime);
   const badge = document.getElementById('detailStatusBadge');
-  badge.textContent = !item.isVisible ? '已隱藏' : (isEnded ? '已截標' : '競標中');
-  badge.className = `absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold z-20 text-white ${!item.isVisible ? 'bg-slate-800' : (isEnded ? 'bg-rose-500' : 'bg-amber-500')}`;
+  badge.textContent = !item.isVisible ? '已隱藏' : (isEnded ? '已截標' : (!item.isBiddable ? '已鎖定' : '競標中'));
+  badge.className = `absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold z-20 text-white ${!item.isVisible ? 'bg-slate-800' : (isEnded ? 'bg-rose-500' : (!item.isBiddable ? 'bg-slate-600' : 'bg-amber-500'))}`;
 
   const adminGroup = document.getElementById('adminActionGroup');
   if (currentUser?.isAdmin) {

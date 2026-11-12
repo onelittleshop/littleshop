@@ -79,7 +79,14 @@ function renderCategories() {
   const container = document.getElementById('categoryBtnContainer');
   const mainCatsFromTable = categoriesData.filter(c => !c.parent_name).map(c => c.name);
   const mainCatsFromItems = auctions.map(a => a.category).filter(Boolean);
-  const cats = ['all', ...new Set([...mainCatsFromTable, ...mainCatsFromItems])];
+  let uniqueCats = [...new Set([...mainCatsFromTable, ...mainCatsFromItems])];
+  
+  // 確保「其他」永遠排在最後面
+  if (uniqueCats.includes('其他')) {
+    uniqueCats = uniqueCats.filter(c => c !== '其他');
+    uniqueCats.push('其他');
+  }
+  const cats = ['all', ...uniqueCats];
   
   container.innerHTML = `<span class="text-slate-400 text-xs mr-1 shrink-0">分類:</span>` + cats.map(c => {
     const active = currentCategory === c;
@@ -159,6 +166,7 @@ function renderAuctions() {
       const isEnded = new Date() > new Date(item.endTime);
       const statusBadge = !item.isVisible ? '<span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">已隱藏</span>' :
                           isEnded ? '<span class="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">已截標</span>' : 
+                          !item.isBiddable ? '<span class="absolute top-2 left-2 bg-slate-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">已鎖定</span>' :
                           '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">競標中</span>';
       const catLabel = item.subCategory ? `${item.category} · ${item.subCategory}` : item.category;
       return `
@@ -198,7 +206,7 @@ function renderAuctions() {
             <div class="flex items-center space-x-2 mb-1">
               <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
               <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
-              <span class="text-[10px] ${isEnded ? 'text-rose-500 font-bold' : 'text-emerald-600 font-bold'}">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : '競標中')}</span>
+              <span class="text-[10px] ${!item.isVisible ? 'text-slate-500' : isEnded ? 'text-rose-500' : !item.isBiddable ? 'text-slate-600' : 'text-emerald-600'} font-bold">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : !item.isBiddable ? '已鎖定' : '競標中')}</span>
             </div>
             <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">${item.title}</h3>
             <p class="text-xs text-slate-500 truncate mt-0.5">${item.desc || '無描述'}</p>
