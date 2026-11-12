@@ -413,3 +413,38 @@ function toggleNewCategoryInput() {
 function handleCategorySelectChange(selectEl) {
   // Can be used if needed
 }
+
+// ==================== [Realtime 即時監聽機制] ====================
+window.msgSubscription = null;
+
+function initRealtimeMessages() {
+  if (!sb || !currentUser) return;
+  
+  // 若已建立連線，先移除避免重複監聽
+  if (window.msgSubscription) {
+    sb.removeChannel(window.msgSubscription);
+  }
+
+  window.msgSubscription = sb.channel('custom-all-channel')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'messages' },
+      async (payload) => {
+        // 當收到資料庫更新，重新抓取訊息
+        await fetchUserMessages();
+        
+        // 如果目前聊天室正開著，且是目前聊天的對象，就刷新對話內容
+        const chatContainer = document.getElementById('messagesChatContainer');
+        if (chatContainer && !chatContainer.classList.contains('hidden')) {
+           renderChatHistory();
+        }
+        
+        // 同步刷新外層的對話清單
+        const listContainer = document.getElementById('messagesListContainer');
+        if (listContainer && !listContainer.classList.contains('hidden')) {
+           showMessagesList();
+        }
+      }
+    )
+    .subscribe();
+}
