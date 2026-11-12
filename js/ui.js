@@ -310,11 +310,10 @@ async function notifyWinner(auctionId, winnerId, winnerName) {
   const item = auctions.find(a => a.id === auctionId);
   if (!item) return;
 
-  const content = `恭喜您！您已成功得標【${item.title}】🎉
-結標金額為：$${item.currentPrice}
-交收地點：${item.location}
+  const firstImage = item.images && item.images.length > 0 ? item.images[0] : '';
+  const imgPrefix = firstImage ? `[[IMG:${firstImage}]]\n` : '';
 
-請直接回覆此訊息與我們確認交收時間與細節，謝謝！`;
+  const content = `${imgPrefix}恭喜您！您已成功得標【${item.title}】🎉\n結標金額為：$${item.currentPrice}\n交收地點：${item.location}\n\n請直接回覆此訊息與我們確認交收時間與細節，謝謝！`;
 
   const { error } = await sb.from('messages').insert([{
     user_id: winnerId,
@@ -534,6 +533,8 @@ function showMessagesList() {
   container.innerHTML = convos.map(c => {
     const isUnread = c.unreadCount > 0;
     const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2 shadow-sm"><i class="fa-solid fa-gavel mr-1"></i>專屬訂單對話</span>` : '';
+    let previewText = (c.lastMessage.content || '').replace(/\[\[IMG:.+?\]\]\n?/g, '📷 圖片 ');
+    previewText = previewText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return `
       <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3.5 rounded-xl border ${isUnread ? 'bg-amber-50/80 border-amber-300 shadow-md' : 'bg-white border-slate-200 hover:bg-slate-50 shadow-sm'} text-xs cursor-pointer transition flex justify-between items-center group">
         <div class="flex items-center space-x-3 overflow-hidden">
@@ -544,7 +545,7 @@ function showMessagesList() {
             <div class="font-bold text-slate-900 text-sm flex items-center">
               ${c.partnerName} ${itemInfo}
             </div>
-            <div class="text-slate-500 truncate mt-0.5 ${isUnread ? 'font-semibold text-amber-900' : ''}">${c.lastMessage.content}</div>
+            <div class="text-slate-500 truncate mt-0.5 ${isUnread ? 'font-semibold text-amber-900' : ''}">${previewText}</div>
           </div>
         </div>
         <div class="flex flex-col items-end shrink-0 pl-2">
@@ -592,10 +593,12 @@ function renderChatHistory() {
 
   container.innerHTML = convo.messages.map(m => {
     const isMe = m.sender_id === currentUser.id;
+    let safeContent = (m.content || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    safeContent = safeContent.replace(/\[\[IMG:(.+?)\]\]/g, '<img src="$1" class="w-full max-w-[200px] h-auto rounded-lg mb-2 object-cover border border-black/10 shadow-sm block">');
     return `
       <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
         <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'}">
-          <p class="whitespace-pre-line leading-relaxed">${m.content}</p>
+          <div class="whitespace-pre-line leading-relaxed">${safeContent}</div>
           <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
         </div>
       </div>
