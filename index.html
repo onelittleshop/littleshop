@@ -27,7 +27,7 @@
 
       <div class="hidden md:flex flex-1 max-w-md mx-4">
         <div class="relative w-full">
-          <input type="text" id="searchInput" oninput="renderAuctions()" placeholder="搜尋拍賣品..." 
+          <input type="text" id="searchInput" onclick="this.value=''; renderAuctions()" oninput="renderAuctions()" placeholder="搜尋拍賣品..." 
             class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400"></i>
         </div>
@@ -102,19 +102,35 @@
             <span class="text-slate-400 text-xs mr-1 shrink-0">分類:</span>
           </div>
         </div>
-        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400 text-xs font-medium"><i class="fa-solid fa-arrow-down-a-z mr-1"></i>排序:</span>
-            <select id="sortSelect" onchange="changeSort()" class="text-xs border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <option value="latest">最新上架</option>
-              <option value="ending_soon">快將截標</option>
-              <option value="price_asc">價格：由低至高</option>
-              <option value="price_desc">價格：由高至低</option>
-            </select>
+        <div class="flex flex-col gap-3 pt-2 border-t border-slate-100">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400 text-xs font-medium"><i class="fa-solid fa-arrow-down-a-z mr-1"></i>排序:</span>
+              <select id="sortSelect" onchange="changeSort()" class="text-xs border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+                <option value="latest">最新上架</option>
+                <option value="ending_soon">快將截標</option>
+                <option value="price_asc">出價：由低至高</option>
+                <option value="price_desc">出價：由高至低</option>
+              </select>
+            </div>
+            <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              <button id="layoutGridBtn" onclick="changeLayout('grid')" class="p-1.5 px-2.5 rounded-md bg-white shadow-sm text-slate-700 text-sm transition"><i class="fa-solid fa-border-all"></i></button>
+              <button id="layoutListBtn" onclick="changeLayout('list')" class="p-1.5 px-2.5 rounded-md text-slate-400 hover:text-slate-700 text-sm transition"><i class="fa-solid fa-list"></i></button>
+            </div>
           </div>
-          <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-            <button id="layoutGridBtn" onclick="changeLayout('grid')" class="p-1.5 px-2.5 rounded-md bg-white shadow-sm text-slate-700 text-sm transition"><i class="fa-solid fa-border-all"></i></button>
-            <button id="layoutListBtn" onclick="changeLayout('list')" class="p-1.5 px-2.5 rounded-md text-slate-400 hover:text-slate-700 text-sm transition"><i class="fa-solid fa-list"></i></button>
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+            <div class="flex items-center space-x-3">
+              <span class="text-slate-500 font-bold"><i class="fa-solid fa-filter mr-1"></i>狀態:</span>
+              <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="statusFilter" value="all" checked onchange="renderAuctions()" class="accent-amber-500 w-3.5 h-3.5"><span>全部</span></label>
+              <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="statusFilter" value="active" onchange="renderAuctions()" class="accent-amber-500 w-3.5 h-3.5"><span>競標中</span></label>
+              <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="statusFilter" value="ended" onchange="renderAuctions()" class="accent-amber-500 w-3.5 h-3.5"><span>已截標</span></label>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-500 font-bold"><i class="fa-solid fa-coins mr-1"></i>出價範圍:</span>
+              <input type="number" id="minPriceFilter" value="0" onclick="this.value=''; renderAuctions()" oninput="renderAuctions()" class="w-16 px-1.5 py-1 border border-slate-200 rounded text-center bg-white shadow-sm" placeholder="最小">
+              <span class="text-slate-400">-</span>
+              <input type="number" id="maxPriceFilter" value="999999" onclick="this.value=''; renderAuctions()" oninput="renderAuctions()" class="w-20 px-1.5 py-1 border border-slate-200 rounded text-center bg-white shadow-sm" placeholder="最大">
+            </div>
           </div>
         </div>
       </div>

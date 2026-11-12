@@ -132,6 +132,11 @@ function renderAuctions() {
   const keyword = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
   const sortType = document.getElementById('sortSelect')?.value || 'latest';
 
+  const statusFilter = document.querySelector('input[name="statusFilter"]:checked')?.value || 'all';
+  const minPrice = Number(document.getElementById('minPriceFilter')?.value) || 0;
+  const maxPriceVal = document.getElementById('maxPriceFilter')?.value;
+  const maxPrice = maxPriceVal === '' ? Infinity : Number(maxPriceVal);
+
   let list = auctions.filter(item => {
     if (!currentUser?.isAdmin && !item.isVisible) return false;
     if (currentCategory !== 'all' && item.category !== currentCategory) return false;
@@ -141,6 +146,16 @@ function renderAuctions() {
       if (!hasBid) return false;
     }
     if (keyword && !item.title.toLowerCase().includes(keyword) && !item.desc.toLowerCase().includes(keyword)) return false;
+    
+    // 狀態篩選
+    const isEnded = new Date() > new Date(item.endTime);
+    if (statusFilter === 'active' && (isEnded || !item.isBiddable)) return false;
+    if (statusFilter === 'ended' && !isEnded) return false;
+    
+    // 出價範圍篩選
+    if (item.currentPrice < minPrice) return false;
+    if (item.currentPrice > maxPrice) return false;
+
     return true;
   });
 
