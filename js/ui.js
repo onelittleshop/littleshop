@@ -127,7 +127,8 @@ async function openDetailModal(id) {
   document.getElementById('detailLocation').textContent = `${item.location}`;
   document.getElementById('detailStartPrice').textContent = item.startPrice;
   document.getElementById('detailIncrement').textContent = item.bidIncrement;
-  document.getElementById('detailCurrentPrice').textContent = item.bids.length > 0 ? '$' + item.currentPrice : '底價: $' + item.startPrice;
+  document.getElementById('detailPriceLabel').textContent = item.bids.length > 0 ? '目前出價' : '起標價格';
+  document.getElementById('detailCurrentPrice').textContent = '$' + (item.bids.length > 0 ? item.currentPrice : item.startPrice);
   document.getElementById('detailBidCount').textContent = item.bids.length;
 
   const highestBidder = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderName : '暫無出價';

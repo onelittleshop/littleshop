@@ -152,9 +152,10 @@ function renderAuctions() {
     if (statusFilter === 'active' && (isEnded || !item.isBiddable)) return false;
     if (statusFilter === 'ended' && !isEnded) return false;
     
-    // 出價範圍篩選
-    if (item.currentPrice < minPrice) return false;
-    if (item.currentPrice > maxPrice) return false;
+    // 出價範圍篩選 (若尚未出價，則以起標價格作為過濾基準)
+    const filterPrice = item.bids.length > 0 ? item.currentPrice : item.startPrice;
+    if (filterPrice < minPrice) return false;
+    if (filterPrice > maxPrice) return false;
 
     return true;
   });
@@ -199,8 +200,8 @@ function renderAuctions() {
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
             <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
-              <span class="text-[10px] text-slate-400">目前價 (${item.bids.length}口)</span>
-              <span class="text-sm sm:text-base font-extrabold text-amber-600">${item.bids.length > 0 ? "$" + item.currentPrice : "底價: $" + item.startPrice}</span>
+              <span class="text-[10px] text-slate-400">${item.bids.length > 0 ? `目前出價 (${item.bids.length}口)` : '起標價格'}</span>
+              <span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
             </div>
           </div>
         </div>
@@ -227,8 +228,8 @@ function renderAuctions() {
             <p class="text-xs text-slate-500 truncate mt-0.5">${item.desc || '無描述'}</p>
           </div>
           <div class="text-right shrink-0 pl-2">
-            <span class="text-[10px] text-slate-400 block">目前最高</span>
-            <span class="text-base sm:text-lg font-extrabold text-amber-600">${item.bids.length > 0 ? "$" + item.currentPrice : "底價: $" + item.startPrice}</span>
+            <span class="text-[10px] text-slate-400 block">${item.bids.length > 0 ? '目前出價' : '起標價格'}</span>
+            <span class="text-base sm:text-lg font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
           </div>
         </div>
       `;
