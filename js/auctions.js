@@ -136,6 +136,7 @@ function renderAuctions() {
   const minPrice = Number(document.getElementById('minPriceFilter')?.value) || 0;
   const maxPriceVal = document.getElementById('maxPriceFilter')?.value;
   const maxPrice = maxPriceVal === '' ? Infinity : Number(maxPriceVal);
+  const timeFilter = document.getElementById('timeFilter')?.value || 'all';
 
   let list = auctions.filter(item => {
     if (!currentUser?.isAdmin && !item.isVisible) return false;
@@ -156,6 +157,12 @@ function renderAuctions() {
     const filterPrice = item.bids.length > 0 ? item.currentPrice : item.startPrice;
     if (filterPrice < minPrice) return false;
     if (filterPrice > maxPrice) return false;
+    
+    // 截標倒數篩選 (只顯示競標中且在所選小時內截標的商品)
+    if (timeFilter !== 'all') {
+      const diffHours = (new Date(item.endTime) - new Date()) / (1000 * 60 * 60);
+      if (diffHours <= 0 || diffHours > Number(timeFilter)) return false;
+    }
 
     return true;
   });
