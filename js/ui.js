@@ -419,32 +419,32 @@ window.msgSubscription = null;
 
 function initRealtimeMessages() {
   if (!sb || !currentUser) return;
-  
-  // 若已建立連線，先移除避免重複監聽
-  if (window.msgSubscription) {
-    sb.removeChannel(window.msgSubscription);
-  }
+  if (window.msgSubscription) return; // 避免重複訂閱導致連線衝突
 
-  window.msgSubscription = sb.channel('custom-all-channel')
+  console.log('啟動即時訊息監聽...');
+  window.msgSubscription = sb.channel('chat-room-' + currentUser.id)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'messages' },
+      { event: 'INSERT', schema: 'public', table: 'messages' },
       async (payload) => {
-        // 當收到資料庫更新，重新抓取訊息
+        console.log('⚡ 收到 Realtime 新訊息:', payload);
+        const prevCount = userMessages.length;
         await fetchUserMessages();
         
-        // 如果目前聊天室正開著，且是目前聊天的對象，就刷新對話內容
-        const chatContainer = document.getElementById('messagesChatContainer');
-        if (chatContainer && !chatContainer.classList.contains('hidden')) {
-           renderChatHistory();
-        }
-        
-        // 同步刷新外層的對話清單
-        const listContainer = document.getElementById('messagesListContainer');
-        if (listContainer && !listContainer.classList.contains('hidden')) {
-           showMessagesList();
+        // 確保新訊息已載入後再重繪，防止畫面閃爍
+        if (userMessages.length > prevCount) {
+          const chatContainer = document.getElementById('messagesChatContainer');
+          if (chatContainer && !chatContainer.classList.contains('hidden')) {
+             renderChatHistory();
+          }
+          const listContainer = document.getElementById('messagesListContainer');
+          if (listContainer && !listContainer.classList.contains('hidden')) {
+             showMessagesList();
+          }
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('Realtime 連線狀態:', status);
+    });
 }
