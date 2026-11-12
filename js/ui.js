@@ -177,7 +177,7 @@ async function openDetailModal(id) {
 
   const actionArea = document.getElementById('bidActionArea');
   if (!currentUser) {
-    actionArea.innerHTML = `<button onclick="openLoginModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">登入參與競標</button>`;
+    actionArea.innerHTML = `<button onclick="closeDetailModal(); openLoginModal();" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">登入參與競標</button>`;
   } else if (isEnded) {
     actionArea.innerHTML = `<div class="text-center py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-sm">本場拍賣已結標</div>`;
   } else if (!item.isBiddable) {
