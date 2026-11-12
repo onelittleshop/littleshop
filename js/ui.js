@@ -414,12 +414,254 @@ function handleCategorySelectChange(selectEl) {
   // Can be used if needed
 }
 
+// ==================== [雙向訊息系統 (完整對齊用戶 ID 匹配)] ====================
+let activeChatUserId = null;
+let activeChatAuctionId = null;
+
+async function fetchUserMessages() {
+  if (!currentUser || !currentUser.id || !sb) return;
+  
+  let query = sb.from('messages').select('*').order('created_at', { ascending: true });
+
+  if (currentUser.isAdmin) {
+    const { data } = await query;
+    userMessages = data || [];
+  } else {
+    // 普通用戶：抓取所有與自己帳號相關的訊息
+    const { data } = await query.or(`user_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},sender_id.eq.${currentUser.id}`);
+    userMessages = data || [];
+  }
+  
+  const unreadCount = userMessages.filter(m => m.receiver_id === currentUser.id && !m.is_read).length;
+  const badge = document.getElementById('unreadMsgBadge');
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+}
+
+function getConversations() {
+  const convos = {};
+  userMessages.forEach(m => {
+    let partnerId, partnerName;
+    if (currentUser.isAdmin) {
+      partnerId = m.user_id === currentUser.id ? (m.sender_id === currentUser.id ? m.receiver_id : m.sender_id) : m.user_id;
+      partnerName = m.sender_id === currentUser.id ? (m.receiver_name || '用戶') : (m.sender_name || '用戶');
+    } else {
+      partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+      partnerName = m.sender_id === currentUser.id ? (m.receiver_name || '官方管理員') : (m.sender_name || '官方管理員');
+    }
+    
+    const threadKey = m.auction_id ? `${m.user_id || partnerId}_${m.auction_id}` : `${m.user_id || partnerId}_general`;
+    
+    if (!convos[threadKey]) {
+      convos[threadKey] = {
+        partnerId: m.user_id || partnerId,
+        partnerName: partnerName,
+        auctionId: m.auction_id,
+        messages: [],
+        lastMessage: m,
+        unreadCount: 0
+      };
+    }
+    
+    convos[threadKey].messages.push(m);
+    if (m.receiver_id === currentUser.id && !m.is_read) {
+      convos[threadKey].unreadCount++;
+    }
+    convos[threadKey].messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  });
+  
+  return Object.values(convos).sort((a, b) => new Date(b.lastMessage.created_at) - new Date(a.lastMessage.created_at));
+}
+
+let chatPollInterval = null;
+
+function closeMessagesModal() {
+  document.getElementById('messagesModal').classList.add('hidden');
+  if (chatPollInterval) {
+    clearInterval(chatPollInterval);
+    chatPollInterval = null;
+  }
+}
+
+async function openMessagesModal() {
+  if (typeof logActivity === 'function') await logActivity('messages_view');
+  document.getElementById('messagesModal').classList.remove('hidden');
+  showMessagesList();
+  
+  // 雙重保險：開啟對話框期間，每 4 秒靜默檢查一次是否有新訊息 (無感刷新)
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  chatPollInterval = setInterval(async () => {
+    if (!currentUser) return;
+    const prevCount = userMessages.length;
+    await fetchUserMessages();
+    
+    // 只有當訊息數量真的改變時，才重新渲染畫面，避免干擾使用者打字或滑動
+    if (userMessages.length > prevCount) {
+      const chatContainer = document.getElementById('messagesChatContainer');
+      if (chatContainer && !chatContainer.classList.contains('hidden')) {
+         renderChatHistory();
+      }
+      const listContainer = document.getElementById('messagesListContainer');
+      if (listContainer && !listContainer.classList.contains('hidden')) {
+         showMessagesList();
+      }
+    }
+  }, 4000);
+}
+
+function showMessagesList() {
+  document.getElementById('messagesListContainer').classList.remove('hidden');
+  document.getElementById('messagesChatContainer').classList.add('hidden');
+  document.getElementById('msgBackButton').classList.add('hidden');
+  document.getElementById('messagesModalTitle').innerHTML = `<i class="fa-regular fa-bell text-amber-500 mr-2"></i>站內訊息中心`;
+  activeChatUserId = null;
+  activeChatAuctionId = null;
+
+  const container = document.getElementById('messagesListContainer');
+  const convos = getConversations();
+
+  if (convos.length === 0) {
+    container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center"><i class="fa-regular fa-comments text-3xl mb-3 text-slate-200"></i>目前沒有任何對話紀錄</div>';
+    return;
+  }
+
+  container.innerHTML = convos.map(c => {
+    const isUnread = c.unreadCount > 0;
+    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2 shadow-sm"><i class="fa-solid fa-gavel mr-1"></i>專屬訂單對話</span>` : '';
+    return `
+      <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3.5 rounded-xl border ${isUnread ? 'bg-amber-50/80 border-amber-300 shadow-md' : 'bg-white border-slate-200 hover:bg-slate-50 shadow-sm'} text-xs cursor-pointer transition flex justify-between items-center group">
+        <div class="flex items-center space-x-3 overflow-hidden">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+            ${c.partnerName.charAt(0)}
+          </div>
+          <div class="truncate">
+            <div class="font-bold text-slate-900 text-sm flex items-center">
+              ${c.partnerName} ${itemInfo}
+            </div>
+            <div class="text-slate-500 truncate mt-0.5 ${isUnread ? 'font-semibold text-amber-900' : ''}">${c.lastMessage.content}</div>
+          </div>
+        </div>
+        <div class="flex flex-col items-end shrink-0 pl-2">
+          <span class="text-[10px] text-slate-400">${new Date(c.lastMessage.created_at).toLocaleDateString()}</span>
+          ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-1 shadow-sm">${c.unreadCount}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function openChat(partnerId, auctionId, partnerName) {
+  activeChatUserId = partnerId;
+  activeChatAuctionId = auctionId || null;
+  
+  document.getElementById('messagesListContainer').classList.add('hidden');
+  document.getElementById('messagesChatContainer').classList.remove('hidden');
+  document.getElementById('msgBackButton').classList.remove('hidden');
+  document.getElementById('messagesModalTitle').textContent = partnerName;
+  
+  renderChatHistory();
+  
+  const unreadIds = userMessages
+    .filter(m => m.receiver_id === currentUser.id && !m.is_read && (m.user_id === partnerId || m.sender_id === partnerId) && (m.auction_id || '') === auctionId)
+    .map(m => m.id);
+    
+  if (unreadIds.length > 0 && sb) {
+    await sb.from('messages').update({ is_read: true }).in('id', unreadIds);
+    userMessages.forEach(m => {
+      if (unreadIds.includes(m.id)) m.is_read = true;
+    });
+    fetchUserMessages(); 
+  }
+}
+
+function renderChatHistory() {
+  const container = document.getElementById('chatHistory');
+  const threadKey = activeChatAuctionId ? `${activeChatUserId}_${activeChatAuctionId}` : `${activeChatUserId}_general`;
+  const convo = getConversations().find(c => (c.auctionId ? `${c.partnerId}_${c.auctionId}` : `${c.partnerId}_general`) === threadKey);
+  
+  if (!convo) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">尚無訊息內容</div>';
+    return;
+  }
+
+  container.innerHTML = convo.messages.map(m => {
+    const isMe = m.sender_id === currentUser.id;
+    return `
+      <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+        <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'}">
+          <p class="whitespace-pre-line leading-relaxed">${m.content}</p>
+          <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  setTimeout(() => {
+    container.scrollTop = container.scrollHeight;
+  }, 10);
+}
+
+async function handleReplyMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('replyMsgContent');
+  const content = input.value.trim();
+  if (!content || !activeChatUserId) return;
+
+  input.value = '';
+  input.style.height = '';
+
+  const isMeAdmin = currentUser.isAdmin;
+  const targetUserId = isMeAdmin ? activeChatUserId : currentUser.id;
+  const receiverId = isMeAdmin ? activeChatUserId : (userMessages.find(m => m.sender_id !== currentUser.id)?.sender_id || null);
+
+  const tempMsg = {
+    id: 'temp_' + Date.now(),
+    user_id: targetUserId,
+    sender_id: currentUser.id,
+    receiver_id: receiverId,
+    sender_name: currentUser.nickname || (isMeAdmin ? '官方管理員' : '用戶'),
+    receiver_name: document.getElementById('messagesModalTitle').textContent,
+    auction_id: activeChatAuctionId,
+    content: content,
+    is_read: false,
+    created_at: new Date().toISOString()
+  };
+  
+  userMessages.push(tempMsg);
+  renderChatHistory();
+
+  const { error } = await sb.from('messages').insert([{
+    user_id: targetUserId,
+    sender_id: currentUser.id,
+    receiver_id: receiverId,
+    sender_name: currentUser.nickname || (isMeAdmin ? '官方管理員' : '用戶'),
+    receiver_name: document.getElementById('messagesModalTitle').textContent,
+    auction_id: activeChatAuctionId,
+    content: content
+  }]);
+
+  if (error) {
+    alert('發送失敗：' + error.message);
+    userMessages = userMessages.filter(m => m.id !== tempMsg.id);
+    renderChatHistory();
+  } else {
+    await fetchUserMessages();
+    renderChatHistory();
+  }
+}
+
 // ==================== [Realtime 即時監聽機制] ====================
 window.msgSubscription = null;
 
 function initRealtimeMessages() {
   if (!sb || !currentUser) return;
-  if (window.msgSubscription) return; // 避免重複訂閱導致連線衝突
+  if (window.msgSubscription) return;
 
   console.log('啟動即時訊息監聽...');
   window.msgSubscription = sb.channel('chat-room-' + currentUser.id)
@@ -431,7 +673,6 @@ function initRealtimeMessages() {
         const prevCount = userMessages.length;
         await fetchUserMessages();
         
-        // 確保新訊息已載入後再重繪，防止畫面閃爍
         if (userMessages.length > prevCount) {
           const chatContainer = document.getElementById('messagesChatContainer');
           if (chatContainer && !chatContainer.classList.contains('hidden')) {
