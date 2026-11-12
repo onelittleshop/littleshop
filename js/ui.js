@@ -458,10 +458,18 @@ function getConversations() {
     const threadKey = m.auction_id ? `${m.user_id || partnerId}_${m.auction_id}` : `${m.user_id || partnerId}_general`;
     
     if (!convos[threadKey]) {
+      // 嘗試從本地的 auctions 陣列找出這則訊息對應的拍賣品名稱
+      let aucTitle = '專屬訂單對話';
+      if (m.auction_id && typeof auctions !== 'undefined') {
+        const found = auctions.find(a => a.id === m.auction_id);
+        if (found && found.title) aucTitle = found.title;
+      }
+      
       convos[threadKey] = {
         partnerId: m.user_id || partnerId,
         partnerName: partnerName,
         auctionId: m.auction_id,
+        auctionTitle: aucTitle,
         messages: [],
         lastMessage: m,
         unreadCount: 0
@@ -532,7 +540,7 @@ function showMessagesList() {
 
   container.innerHTML = convos.map(c => {
     const isUnread = c.unreadCount > 0;
-    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2 shadow-sm"><i class="fa-solid fa-gavel mr-1"></i>專屬訂單對話</span>` : '';
+    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2 shadow-sm truncate max-w-[120px] sm:max-w-[150px] inline-block align-bottom"><i class="fa-solid fa-gavel mr-1"></i>${c.auctionTitle}</span>` : '';
     let previewText = (c.lastMessage.content || '').replace(/\[\[IMG:.+?\]\]\n?/g, '📷 圖片 ');
     previewText = previewText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return `
