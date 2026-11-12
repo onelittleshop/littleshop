@@ -51,7 +51,7 @@ async function fetchAuctions() {
         subCategory: item.sub_category || '',
         startPrice: Number(item.start_price ?? 0),
         bidIncrement: Number(item.bid_increment ?? 5),
-        currentPrice: Number(item.current_price ?? item.start_price ?? 0),
+        currentPrice: Number(item.current_price || 0),
         endTime: item.end_time,
         location: item.location || '葵興地鐵站',
         desc: item.description || item.desc || '',
@@ -177,7 +177,7 @@ function renderAuctions() {
             </div>
             <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
               <span class="text-[10px] text-slate-400">目前價 (${item.bids.length}口)</span>
-              <span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.currentPrice}</span>
+              <span class="text-sm sm:text-base font-extrabold text-amber-600">${item.bids.length > 0 ? "$" + item.currentPrice : "尚未出價"}</span>
             </div>
           </div>
         </div>
@@ -261,7 +261,7 @@ async function handleCreateAuction(e) {
     sub_category: subCategory || null,
     start_price: startPrice,
     bid_increment: bidIncrement,
-    current_price: startPrice,
+    current_price: 0,
     end_time: endTime,
     location: `${method} · ${location}`,
     description: desc,
@@ -292,9 +292,17 @@ async function placeBid(itemId) {
   if (!item) return;
 
   const inputAmt = Number(document.getElementById('bidAmountInput').value);
-  const minRequired = item.currentPrice + item.bidIncrement;
-  if (inputAmt < minRequired) {
-    return alert(`出價金額不得低於 $${minRequired}`);
+  const isFirstBid = item.bids.length === 0;
+  const nextMin = isFirstBid ? item.startPrice : (item.currentPrice + item.bidIncrement);
+
+  if (inputAmt < nextMin) {
+    return alert(`出價金額不得低於 $${nextMin}`);
+  }
+  
+  const basePrice = isFirstBid ? item.startPrice : item.currentPrice;
+  const diff = inputAmt - basePrice;
+  if (diff % item.bidIncrement !== 0) {
+    return alert(`出價增幅必須是每口價 ($${item.bidIncrement}) 的整數倍！`);
   }
 
   const { error: bidError } = await sb.from('bids').insert([{

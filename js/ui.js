@@ -127,7 +127,7 @@ async function openDetailModal(id) {
   document.getElementById('detailLocation').textContent = `${item.location}`;
   document.getElementById('detailStartPrice').textContent = item.startPrice;
   document.getElementById('detailIncrement').textContent = item.bidIncrement;
-  document.getElementById('detailCurrentPrice').textContent = '$' + item.currentPrice;
+  document.getElementById('detailCurrentPrice').textContent = item.bids.length > 0 ? '$' + item.currentPrice : '尚未出價';
   document.getElementById('detailBidCount').textContent = item.bids.length;
 
   const highestBidder = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderName : '暫無出價';
@@ -186,10 +186,10 @@ async function openDetailModal(id) {
     const nextMin = item.bids.length === 0 ? item.startPrice : (item.currentPrice + item.bidIncrement);
     actionArea.innerHTML = `
       <div class="flex items-center space-x-2">
-        <input type="number" id="bidAmountInput" min="${nextMin}" value="${nextMin}" class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-base font-bold text-slate-900 bg-white">
+        <input type="number" id="bidAmountInput" min="${nextMin}" step="${item.bidIncrement}" value="${nextMin}" class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-base font-bold text-slate-900 bg-white">
         <button onclick="placeBid('${item.id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm transition shrink-0">確認出價</button>
       </div>
-      <p class="text-[10px] text-slate-400 mt-1.5">最低出價需達 $${nextMin} (每口加價 +$${item.bidIncrement})</p>
+      <p class="text-[10px] text-slate-400 mt-1.5">最低出價 $${nextMin}，且只能以每口價 ($${item.bidIncrement}) 的倍數遞增</p>
     `;
   }
 
