@@ -155,29 +155,31 @@
     </div>
   </main>
 
-  <!-- 右下角浮動按鈕群組 -->
-  <div class="fixed z-40 right-4 bottom-6 sm:right-8 sm:bottom-8 flex flex-col items-end gap-3">
-    
-    <!-- IG DM 訊息按鈕 -->
-    <a href="https://ig.me/m/one_little_shop" target="_blank" class="group flex items-center justify-end">
-      <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block whitespace-nowrap">
-        IG 即時對話 💬
-      </div>
-      <div class="bg-white text-slate-800 border-2 border-slate-200 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 hover:-rotate-6 transition-all duration-300">
-        <i class="fa-brands fa-facebook-messenger text-[22px]"></i>
-      </div>
-    </a>
+  <!-- 右下角浮動按鈕群組 (修正對齊主內容區塊) -->
+  <div class="fixed inset-x-0 bottom-6 sm:bottom-8 z-40 pointer-events-none flex justify-center">
+    <div class="w-full max-w-7xl px-4 sm:px-6 lg:px-8 relative">
+      <div class="absolute right-4 sm:right-8 bottom-0 flex flex-col items-end gap-3 pointer-events-auto">
+        <!-- IG DM 訊息按鈕 -->
+        <a href="https://ig.me/m/one_little_shop" target="_blank" class="group flex items-center justify-end">
+          <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block whitespace-nowrap">
+            IG 即時對話 💬
+          </div>
+          <div class="bg-white text-slate-800 border-2 border-slate-200 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 hover:-rotate-6 transition-all duration-300">
+            <i class="fa-brands fa-facebook-messenger text-[22px]"></i>
+          </div>
+        </a>
 
-    <!-- IG 追蹤按鈕 -->
-    <a href="https://www.instagram.com/one_little_shop" target="_blank" class="group flex items-center justify-end">
-      <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block whitespace-nowrap">
-        追蹤最新動態 ✨
+        <!-- IG 追蹤按鈕 -->
+        <a href="https://www.instagram.com/one_little_shop" target="_blank" class="group flex items-center justify-end">
+          <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block whitespace-nowrap">
+            追蹤最新動態 ✨
+          </div>
+          <div class="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 hover:scale-110 hover:-rotate-6 transition-all duration-300">
+            <i class="fa-brands fa-instagram text-[26px]"></i>
+          </div>
+        </a>
       </div>
-      <div class="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 hover:scale-110 hover:-rotate-6 transition-all duration-300">
-        <i class="fa-brands fa-instagram text-[26px]"></i>
-      </div>
-    </a>
-    
+    </div>
   </div>
 
   <!-- ==================== [流量統計詳情 Modal] ==================== -->
