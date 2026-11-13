@@ -222,31 +222,48 @@
   </div>
 
   <!-- ==================== [站內訊息中心 Modal (雙向對話)] ==================== -->
-  <div id="messagesModal" onclick="if(event.target === this) closeMessagesModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-0 shadow-2xl modal-enter flex flex-col h-[80vh] sm:h-[600px] overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 shrink-0">
-        <div class="flex items-center space-x-2">
-          <button id="msgBackButton" onclick="showMessagesList()" class="hidden text-slate-500 hover:text-amber-600 transition p-1 mr-1">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-          <h3 id="messagesModalTitle" class="text-base font-bold text-slate-900"><i class="fa-regular fa-bell text-amber-500 mr-2"></i>站內訊息中心</h3>
+  <div id="messagesModal" onclick="if(event.target === this) closeMessagesModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center sm:p-4">
+    <div class="bg-white sm:rounded-2xl w-full sm:max-w-5xl p-0 sm:shadow-2xl modal-enter flex h-full sm:h-[85vh] sm:max-h-[750px] overflow-hidden">
+      
+      <!-- 左側：訊息清單 -->
+      <div id="messagesSidebar" class="w-full sm:w-1/3 sm:max-w-[320px] flex flex-col border-r border-slate-200 bg-white shrink-0 z-20">
+        <div class="px-4 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+          <h3 class="text-base font-bold text-slate-900"><i class="fa-regular fa-comments text-amber-500 mr-2"></i>聊天列表</h3>
+          <button onclick="closeMessagesModal()" class="sm:hidden text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-        <button onclick="closeMessagesModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <div id="messagesListContainer" class="flex-1 overflow-y-auto pt-2 pb-6 bg-slate-50/30 no-scrollbar"></div>
       </div>
       
-      <div id="messagesListContainer" class="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50/50"></div>
-      
-      <div id="messagesChatContainer" class="hidden flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
-        <div id="chatHistory" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
-        <div class="p-3 bg-white border-t border-slate-100">
+      <!-- 右側：對話視窗 -->
+      <div id="messagesChatContainer" class="hidden sm:flex flex-1 flex-col h-full overflow-hidden bg-slate-50 relative w-full">
+        <!-- 空白狀態 (尚未選擇對話) -->
+        <div id="messagesEmptyState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50 z-20">
+          <i class="fa-regular fa-comments text-5xl mb-3 opacity-20"></i>
+          <span class="text-sm font-medium">請選擇左側聯絡人開始對話</span>
+        </div>
+
+        <div class="px-4 py-3 sm:py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 shadow-sm z-10">
+          <div class="flex items-center space-x-2">
+            <button onclick="backToListMobile()" class="sm:hidden text-slate-500 hover:text-amber-600 transition p-1.5 mr-1 bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <h3 id="messagesModalTitle" class="text-base font-bold text-slate-900">載入中...</h3>
+          </div>
+          <button onclick="closeMessagesModal()" class="hidden sm:block text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        
+        <div id="chatHistory" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4"></div>
+        
+        <div class="p-3 bg-white border-t border-slate-200">
           <form onsubmit="handleReplyMessage(event)" class="flex items-end space-x-2">
-            <textarea id="replyMsgContent" required rows="1" placeholder="輸入訊息..." class="flex-1 bg-slate-100 border-transparent focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm resize-none" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 100) + 'px'"></textarea>
+            <textarea id="replyMsgContent" required rows="1" placeholder="請輸入訊息，按 Enter 鍵發送..." class="flex-1 bg-slate-100 border-transparent focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm resize-none" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 100) + 'px'" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();handleReplyMessage(event);}"></textarea>
             <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm transition">
               <i class="fa-solid fa-paper-plane text-sm -ml-0.5 mt-0.5"></i>
             </button>
           </form>
         </div>
       </div>
+      
     </div>
   </div>
 
