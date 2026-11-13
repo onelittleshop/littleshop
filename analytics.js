@@ -1,0 +1,118 @@
+// ==================== [模塊：Analytics] ====================
+function getDeviceType() {
+  const ua = navigator.userAgent;
+  if (/ipad|tablet|playbook|silk/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+    return 'tablet';
+  }
+  if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+    return 'mobile';
+  }
+  return 'desktop';
+}
+
+function getGuestSession() {
+  let session = localStorage.getItem('guest_session');
+  if (!session) {
+    session = 'gs_' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('guest_session', session);
+  }
+  return session;
+}
+
+async function logActivity(pageType, targetId = null) {
+  if (!sb) return;
+  const device = getDeviceType();
+  const session = getGuestSession();
+  const userId = currentUser ? currentUser.id : null;
+  
+  let itemTitle = null;
+  if (targetId && auctions) {
+    const item = auctions.find(a => a.id === targetId);
+    if (item) itemTitle = item.title;
+  }
+
+  try {
+    // 直接寫入 public.activity_logs 表，欄位 100% 對應資料庫定義
+    const { error } = await sb.from('activity_logs').insert([{
+      user_id: userId,
+      guest_session: session,
+      device_type: device,
+      page_type: pageType,
+      target_id: targetId,
+      title: itemTitle
+    }]);
+    if (error) {
+      console.warn('activity_logs 寫入提醒:', error.message);
+    }
+  } catch (err) {
+    console.warn('Analytics log error:', err);
+  }
+}
+
+async function updateAdminStatsUI() {
+  if (!currentUser?.isAdmin || !sb) return;
+  try {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Hong_Kong' });
+    const startOfDayHK = `${todayStr}T00:00:00+08:00`;
+
+    // 直接從 activity_logs 統計今日瀏覽與設備分佈
+    const { data: todayLogs, error } = await sb
+      .from('activity_logs')
+      .select('device_type, page_type')
+      .gte('created_at', startOfDayHK);
+
+    const visitEl = document.getElementById('adminVisitCount');
+    const devEl = document.getElementById('adminDeviceStats');
+
+    if (!error && todayLogs) {
+      const homeLogs = todayLogs.filter(l => l.page_type === 'home');
+      const targetList = homeLogs.length > 0 ? homeLogs : todayLogs;
+
+      if (visitEl) {
+        visitEl.textContent = targetList.length;
+      }
+
+      if (devEl) {
+        let mobile = 0, tablet = 0, desktop = 0;
+        targetList.forEach(d => {
+          const dt = (d.device_type || '').toLowerCase();
+          if (dt === 'mobile') mobile++;
+          else if (dt === 'tablet') tablet++;
+          else desktop++;
+        });
+        devEl.textContent = `今日設備分佈 ➔ 手機: ${mobile} ｜ 平板: ${tablet} ｜ 電腦: ${desktop}`;
+      }
+    }
+  } catch (err) {
+    console.warn('更新管理員統計失敗:', err);
+  }
+}
+
+async function openStatsModal() {
+  if (!currentUser?.isAdmin || !sb) return;
+  document.getElementById('statsModal').classList.remove('hidden');
+  const container = document.getElementById('statsListContainer');
+  container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">載入詳細流量紀錄中...</div>';
+  
+  const { data, error } = await sb.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(50);
+  if (error || !data) {
+    container.innerHTML = '<div class="text-center py-4 text-rose-500 text-xs">載入失敗：' + (error?.message || '') + '</div>';
+    return;
+  }
+  
+  if (data.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">目前沒有任何紀錄</div>';
+    return;
+  }
+  
+  container.innerHTML = data.map(log => `
+    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs flex justify-between items-center">
+      <div class="overflow-hidden">
+        <span class="font-bold text-slate-800">${log.page_type || '瀏覽'}</span>
+        ${log.title ? `<span class="text-slate-500 ml-1 truncate block sm:inline">${log.title}</span>` : ''}
+        <span class="text-[10px] text-slate-400 block">${new Date(log.created_at).toLocaleString()}</span>
+      </div>
+      <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 shrink-0">${log.device_type || 'desktop'}</span>
+    </div>
+  `).join('');
+}
