@@ -490,7 +490,8 @@ function getConversations() {
 let chatPollInterval = null;
 
 function closeMessagesModal() {
-  document.getElementById('messagesModal').classList.add('hidden');
+  const modal = document.getElementById('messagesModal');
+  if (modal) modal.classList.add('hidden');
   if (chatPollInterval) {
     clearInterval(chatPollInterval);
     chatPollInterval = null;
@@ -503,10 +504,16 @@ function closeMessagesModal() {
 }
 
 function backToListMobile() {
-  document.getElementById('messagesSidebar').classList.remove('hidden');
-  document.getElementById('messagesSidebar').classList.add('flex');
-  document.getElementById('messagesChatContainer').classList.add('hidden');
-  document.getElementById('messagesChatContainer').classList.remove('flex');
+  const sidebar = document.getElementById('messagesSidebar');
+  const chatContainer = document.getElementById('messagesChatContainer');
+  if (sidebar) {
+    sidebar.classList.remove('hidden');
+    sidebar.classList.add('flex');
+  }
+  if (chatContainer) {
+    chatContainer.classList.add('hidden');
+    chatContainer.classList.remove('flex');
+  }
   activeChatUserId = null;
   activeChatAuctionId = null;
   showMessagesList(); // Re-render to clear active highlight
@@ -514,7 +521,8 @@ function backToListMobile() {
 
 async function openMessagesModal() {
   if (typeof logActivity === 'function') await logActivity('messages_view');
-  document.getElementById('messagesModal').classList.remove('hidden');
+  const modal = document.getElementById('messagesModal');
+  if (modal) modal.classList.remove('hidden');
   
   // Ensure layout is correct on open (sidebar visible, chat hidden on mobile)
   const sidebar = document.getElementById('messagesSidebar');
@@ -692,7 +700,16 @@ async function handleReplyMessage(e) {
 
   const isMeAdmin = currentUser.isAdmin;
   const targetUserId = isMeAdmin ? activeChatUserId : currentUser.id;
-  const receiverId = isMeAdmin ? activeChatUserId : (userMessages.find(m => m.sender_id !== currentUser.id)?.sender_id || null);
+  // If not admin, the receiver is the admin we are talking to.
+  // We should extract this from the active conversation instead of just finding ANY message.
+  let receiverId = null;
+  if (isMeAdmin) {
+    receiverId = activeChatUserId;
+  } else {
+    // 找一個該對話串的歷史紀錄來判斷對方的ID
+    const msg = userMessages.find(m => (m.user_id === activeChatUserId || m.sender_id === activeChatUserId) && m.sender_id !== currentUser.id);
+    receiverId = msg ? msg.sender_id : activeChatUserId; 
+  }
 
   const tempMsg = {
     id: 'temp_' + Date.now(),
