@@ -122,7 +122,10 @@ function updateAuthUI() {
   const adminBanner = document.getElementById('adminBanner');
   const myBidCountBadge = document.getElementById('myBidCountBadge');
   
-  const myBidCount = currentUser ? auctions.filter(a => a.bids.some(b => b.bidderId === currentUser.id)).length : 0;
+  const myBidCount = currentUser ? auctions.filter(a => {
+    if (!currentUser.isAdmin && !a.isVisible) return false;
+    return a.bids.some(b => b.bidderId === currentUser.id);
+  }).length : 0;
   if (myBidCountBadge) myBidCountBadge.textContent = myBidCount;
 
   if (currentUser) {
