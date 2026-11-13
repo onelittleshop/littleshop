@@ -548,44 +548,65 @@ async function openMessagesModal() {
 function showMessagesList() {
   const container = document.getElementById('messagesListContainer');
   if (!container) return;
-  const convos = getConversations();
+  
+  try {
+    const convos = getConversations();
 
-  if (convos.length === 0) {
-    container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center"><i class="fa-regular fa-comments text-3xl mb-3 text-slate-200"></i>目前沒有任何對話</div>';
-    return;
-  }
+    if (convos.length === 0) {
+      container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center"><i class="fa-regular fa-comments text-3xl mb-3 text-slate-200"></i>目前沒有任何對話紀錄</div>';
+      return;
+    }
 
-  container.innerHTML = convos.map(c => {
-    const isUnread = c.unreadCount > 0;
-    const itemInfo = c.auctionId ? `<span class="text-[9px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-1.5 shadow-sm truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom"><i class="fa-solid fa-gavel mr-1"></i>${c.auctionTitle}</span>` : '';
-    let previewText = (c.lastMessage.content || '').replace(/\[\[IMG:.+?\]\]\n?/g, '[圖片] ');
-    previewText = previewText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    
-    const isActive = (c.partnerId === activeChatUserId && c.auctionId === activeChatAuctionId);
-    const activeClasses = isActive ? 'bg-slate-200 shadow-inner' : 'bg-transparent hover:bg-slate-100';
+    container.innerHTML = convos.map(c => {
+      const isUnread = c.unreadCount > 0;
+      
+      const safeTitle = String(c.auctionTitle || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const itemInfo = c.auctionId ? `<span class="text-[9px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-1.5 shadow-sm truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom"><i class="fa-solid fa-gavel mr-1"></i>${safeTitle}</span>` : '';
+      
+      let previewText = String(c.lastMessage.content || '').replace(/\[\[IMG:.+?\]\]\n?/g, '[圖片] ');
+      previewText = previewText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      const isActive = (c.partnerId === activeChatUserId && c.auctionId === activeChatAuctionId);
+      const activeClasses = isActive ? 'bg-slate-200 shadow-inner' : 'bg-transparent hover:bg-slate-100';
+      
+      let dateStr = '';
+      try {
+         dateStr = c.lastMessage.created_at ? new Date(c.lastMessage.created_at).toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) : '';
+      } catch(e) {}
+      
+      const pName = String(c.partnerName || 'U');
+      const avatarChar = pName.charAt(0).toUpperCase();
+      
+      const safePartnerId = String(c.partnerId || '').replace(/'/g, "\'");
+      const safeAuctionId = String(c.auctionId || '').replace(/'/g, "\'");
+      const safePartnerName = pName.replace(/'/g, "\'").replace(/"/g, "&quot;");
 
-    return `
-      <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3 rounded-xl border border-transparent ${activeClasses} text-xs cursor-pointer transition flex justify-between items-center group mb-0.5 mx-2">
-        <div class="flex items-center space-x-3 overflow-hidden w-full">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-            ${c.partnerName.charAt(0)}
-          </div>
-          <div class="truncate flex-1">
-            <div class="flex items-center justify-between">
-              <div class="font-bold text-slate-900 text-sm flex items-center truncate pr-2">
-                ${c.partnerName} ${itemInfo}
-              </div>
-              <span class="text-[10px] text-slate-400 shrink-0">${new Date(c.lastMessage.created_at).toLocaleDateString(undefined, {month:'numeric', day:'numeric'})}</span>
+      return `
+        <div onclick="openChat('${safePartnerId}', '${safeAuctionId}', '${safePartnerName}')" class="p-3 rounded-xl border border-transparent ${activeClasses} text-xs cursor-pointer transition flex justify-between items-center group mb-0.5 mx-2">
+          <div class="flex items-center space-x-3 overflow-hidden w-full">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+              ${avatarChar}
             </div>
-            <div class="flex items-center justify-between mt-1">
-              <div class="text-slate-500 truncate ${isUnread ? 'font-semibold text-amber-900' : ''}">${previewText}</div>
-              ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0 ml-2">${c.unreadCount}</span>` : ''}
+            <div class="truncate flex-1">
+              <div class="flex items-center justify-between">
+                <div class="font-bold text-slate-900 text-sm flex items-center truncate pr-2">
+                  ${pName} ${itemInfo}
+                </div>
+                <span class="text-[10px] text-slate-400 shrink-0">${dateStr}</span>
+              </div>
+              <div class="flex items-center justify-between mt-1">
+                <div class="text-slate-500 truncate ${isUnread ? 'font-semibold text-amber-900' : ''}">${previewText}</div>
+                ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0 ml-2">${c.unreadCount}</span>` : ''}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  } catch (err) {
+    console.error("Error rendering message list:", err);
+    container.innerHTML = '<div class="text-center py-10 text-rose-500 text-xs">載入對話失敗，請重新整理頁面。</div>';
+  }
 }
 
 async function openChat(partnerId, auctionId, partnerName) {
@@ -649,7 +670,7 @@ function renderChatHistory() {
       <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
         <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'}">
           <div class="whitespace-pre-line leading-relaxed">${safeContent}</div>
-          <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
         </div>
       </div>
     `;
