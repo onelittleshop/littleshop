@@ -493,14 +493,14 @@
             <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
           </div>
 
-          <div class="my-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-2xl p-4 sm:p-5 border border-rose-100 shadow-sm">
-            <div class="flex justify-between items-end mb-1">
-              <span class="text-sm font-bold text-rose-600 flex items-center space-x-1.5"><i class="fa-solid fa-fire"></i> <span id="detailPriceLabel">目前最高價</span></span>
-              <span class="text-[11px] text-slate-500 font-medium bg-white px-2 py-1 rounded-md border border-slate-100 shadow-sm">底價 $<span id="detailStartPrice"></span> ｜ 每口 +$<span id="detailIncrement"></span></span>
+          <div class="my-4 bg-slate-50 rounded-xl p-4 border border-slate-200/80">
+            <div class="flex justify-between items-baseline">
+              <span class="text-xs text-slate-500 font-medium" id="detailPriceLabel">目前最高價</span>
+              <span class="text-xs text-slate-400">底價 $<span id="detailStartPrice"></span> ｜ 每口 +$<span id="detailIncrement"></span></span>
             </div>
-            <div class="flex items-end justify-between mt-2">
-              <div class="text-4xl sm:text-5xl font-black text-rose-600 tracking-tighter" id="detailCurrentPrice"></div>
-              <div class="text-xs font-bold text-rose-900 bg-rose-200/50 px-2.5 py-1.5 rounded-lg border border-rose-200" id="detailHighestBidder"></div>
+            <div class="flex items-baseline justify-between mt-1">
+              <div class="text-3xl font-extrabold text-amber-600" id="detailCurrentPrice"></div>
+              <div class="text-xs text-slate-600" id="detailHighestBidder"></div>
             </div>
           </div>
 

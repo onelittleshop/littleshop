@@ -207,8 +207,8 @@ function renderAuctions() {
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
             <div class="mt-3 pt-2 border-t border-slate-100 flex items-end justify-between">
-              <span class="text-[11px] font-bold text-slate-500">${item.bids.length > 0 ? `目前出價 (${item.bids.length}口)` : '起標價格'}</span>
-              <span class="text-lg sm:text-xl font-black text-rose-600 tracking-tight">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
+              <span class="text-[11px] font-bold text-slate-500 mb-0.5">${item.bids.length > 0 ? `目前出價 <span class="font-medium text-[9px] bg-slate-100 px-1 rounded text-slate-400">(${item.bids.length}口)</span>` : '起標價格'}</span>
+              <span class="text-xl font-black text-rose-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
             </div>
           </div>
         </div>
@@ -234,9 +234,9 @@ function renderAuctions() {
             <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">${item.title}</h3>
             <p class="text-xs text-slate-500 truncate mt-0.5">${item.desc || '無描述'}</p>
           </div>
-          <div class="text-right shrink-0 pl-2 flex flex-col items-end">
-            <span class="text-[11px] font-bold text-slate-500 block mb-0.5">${item.bids.length > 0 ? '目前出價' : '起標價格'}</span>
-            <span class="text-xl sm:text-2xl font-black text-rose-600 tracking-tight">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
+          <div class="text-right shrink-0 pl-3 flex flex-col items-end justify-center">
+            <span class="text-[11px] font-bold text-slate-500 block mb-1">${item.bids.length > 0 ? `目前出價 <span class="font-medium text-[9px] bg-slate-100 px-1 rounded text-slate-400">(${item.bids.length}口)</span>` : '起標價格'}</span>
+            <span class="text-2xl sm:text-3xl font-black text-rose-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
           </div>
         </div>
       `;
