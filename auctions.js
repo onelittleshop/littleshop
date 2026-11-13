@@ -206,8 +206,8 @@ function renderAuctions() {
               </div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
-            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-              <span class="text-[11px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md shadow-sm">${item.bids.length > 0 ? `目前出價 <span class="text-amber-700 font-medium text-[10px]">(${item.bids.length}口)</span>` : '起標價格'}</span>
+            <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+              <span class="text-[10px] text-slate-400">${item.bids.length > 0 ? `目前出價 (${item.bids.length}口)` : '起標價格'}</span>
               <span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
             </div>
           </div>
@@ -235,8 +235,8 @@ function renderAuctions() {
             <p class="text-xs text-slate-500 truncate mt-0.5">${item.desc || '無描述'}</p>
           </div>
           <div class="text-right shrink-0 pl-2">
-            <span class="text-[11px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md inline-block mb-1 shadow-sm">${item.bids.length > 0 ? '目前出價' : '起標價格'}</span>
-            <span class="text-base sm:text-lg font-extrabold text-amber-600 block">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
+            <span class="text-[10px] text-slate-400 block">${item.bids.length > 0 ? '目前出價' : '起標價格'}</span>
+            <span class="text-base sm:text-lg font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
           </div>
         </div>
       `;
