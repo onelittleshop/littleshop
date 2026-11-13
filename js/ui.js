@@ -490,91 +490,151 @@ function getConversations() {
 let chatPollInterval = null;
 
 function closeMessagesModal() {
-  document.getElementById('messagesModal').classList.add('hidden');
+  const modal = document.getElementById('messagesModal');
+  if (modal) modal.classList.add('hidden');
   if (chatPollInterval) {
     clearInterval(chatPollInterval);
     chatPollInterval = null;
   }
+  // Reset mobile view when closing
+  const sidebar = document.getElementById('messagesSidebar');
+  const chatContainer = document.getElementById('messagesChatContainer');
+  if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); }
+  if (chatContainer) { chatContainer.classList.add('hidden'); chatContainer.classList.remove('flex'); }
+}
+
+function backToListMobile() {
+  const sidebar = document.getElementById('messagesSidebar');
+  const chatContainer = document.getElementById('messagesChatContainer');
+  if (sidebar) {
+    sidebar.classList.remove('hidden');
+    sidebar.classList.add('flex');
+  }
+  if (chatContainer) {
+    chatContainer.classList.add('hidden');
+    chatContainer.classList.remove('flex');
+  }
+  activeChatUserId = null;
+  activeChatAuctionId = null;
+  showMessagesList(); // Re-render to clear active highlight
 }
 
 async function openMessagesModal() {
   if (typeof logActivity === 'function') await logActivity('messages_view');
-  document.getElementById('messagesModal').classList.remove('hidden');
+  const modal = document.getElementById('messagesModal');
+  if (modal) modal.classList.remove('hidden');
+  
+  // Ensure layout is correct on open (sidebar visible, chat hidden on mobile)
+  const sidebar = document.getElementById('messagesSidebar');
+  const chatContainer = document.getElementById('messagesChatContainer');
+  if(sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); }
+  if(chatContainer) { chatContainer.classList.add('hidden'); chatContainer.classList.remove('flex'); }
+  
+  const emptyState = document.getElementById('messagesEmptyState');
+  if (emptyState) emptyState.classList.remove('hidden');
+  
+  activeChatUserId = null;
+  activeChatAuctionId = null;
+
   showMessagesList();
   
-  // 雙重保險：開啟對話框期間，每 4 秒靜默檢查一次是否有新訊息 (無感刷新)
   if (chatPollInterval) clearInterval(chatPollInterval);
   chatPollInterval = setInterval(async () => {
     if (!currentUser) return;
     const prevCount = userMessages.length;
     await fetchUserMessages();
-    
-    // 只有當訊息數量真的改變時，才重新渲染畫面，避免干擾使用者打字或滑動
     if (userMessages.length > prevCount) {
-      const chatContainer = document.getElementById('messagesChatContainer');
-      if (chatContainer && !chatContainer.classList.contains('hidden')) {
+      const cContainer = document.getElementById('messagesChatContainer');
+      if (cContainer && (!cContainer.classList.contains('hidden') || cContainer.classList.contains('sm:flex'))) {
          renderChatHistory();
       }
-      const listContainer = document.getElementById('messagesListContainer');
-      if (listContainer && !listContainer.classList.contains('hidden')) {
-         showMessagesList();
-      }
+      showMessagesList();
     }
   }, 4000);
 }
 
 function showMessagesList() {
-  document.getElementById('messagesListContainer').classList.remove('hidden');
-  document.getElementById('messagesChatContainer').classList.add('hidden');
-  document.getElementById('msgBackButton').classList.add('hidden');
-  document.getElementById('messagesModalTitle').innerHTML = `<i class="fa-regular fa-bell text-amber-500 mr-2"></i>站內訊息中心`;
-  activeChatUserId = null;
-  activeChatAuctionId = null;
-
   const container = document.getElementById('messagesListContainer');
-  const convos = getConversations();
+  if (!container) return;
+  
+  try {
+    const convos = getConversations();
 
-  if (convos.length === 0) {
-    container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center"><i class="fa-regular fa-comments text-3xl mb-3 text-slate-200"></i>目前沒有任何對話紀錄</div>';
-    return;
-  }
+    if (convos.length === 0) {
+      container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center"><i class="fa-regular fa-comments text-3xl mb-3 text-slate-200"></i>目前沒有任何對話紀錄</div>';
+      return;
+    }
 
-  container.innerHTML = convos.map(c => {
-    const isUnread = c.unreadCount > 0;
-    const itemInfo = c.auctionId ? `<span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-2 shadow-sm truncate max-w-[120px] sm:max-w-[150px] inline-block align-bottom"><i class="fa-solid fa-gavel mr-1"></i>${c.auctionTitle}</span>` : '';
-    let previewText = (c.lastMessage.content || '').replace(/\[\[IMG:.+?\]\]\n?/g, '📷 圖片 ');
-    previewText = previewText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return `
-      <div onclick="openChat('${c.partnerId}', '${c.auctionId || ''}', '${c.partnerName}')" class="p-3.5 rounded-xl border ${isUnread ? 'bg-amber-50/80 border-amber-300 shadow-md' : 'bg-white border-slate-200 hover:bg-slate-50 shadow-sm'} text-xs cursor-pointer transition flex justify-between items-center group">
-        <div class="flex items-center space-x-3 overflow-hidden">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-            ${c.partnerName.charAt(0)}
-          </div>
-          <div class="truncate">
-            <div class="font-bold text-slate-900 text-sm flex items-center">
-              ${c.partnerName} ${itemInfo}
+    container.innerHTML = convos.map(c => {
+      const isUnread = c.unreadCount > 0;
+      
+      const safeTitle = String(c.auctionTitle || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const itemInfo = c.auctionId ? `<span class="text-[9px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 ml-1.5 shadow-sm truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom"><i class="fa-solid fa-gavel mr-1"></i>${safeTitle}</span>` : '';
+      
+      let previewText = String(c.lastMessage.content || '').replace(/\[\[IMG:.+?\]\]\n?/g, '[圖片] ');
+      previewText = previewText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      const isActive = (c.partnerId === activeChatUserId && c.auctionId === activeChatAuctionId);
+      const activeClasses = isActive ? 'bg-slate-200 shadow-inner' : 'bg-transparent hover:bg-slate-100';
+      
+      let dateStr = '';
+      try {
+         dateStr = c.lastMessage.created_at ? new Date(c.lastMessage.created_at).toLocaleDateString(undefined, {month:'numeric', day:'numeric'}) : '';
+      } catch(e) {}
+      
+      const pName = String(c.partnerName || 'U');
+      const avatarChar = pName.charAt(0).toUpperCase();
+      
+      const safePartnerId = String(c.partnerId || '').replace(/'/g, "\'");
+      const safeAuctionId = String(c.auctionId || '').replace(/'/g, "\'");
+      const safePartnerName = pName.replace(/'/g, "\'").replace(/"/g, "&quot;");
+
+      return `
+        <div onclick="openChat('${safePartnerId}', '${safeAuctionId}', '${safePartnerName}')" class="p-3 rounded-xl border border-transparent ${activeClasses} text-xs cursor-pointer transition flex justify-between items-center group mb-0.5 mx-2">
+          <div class="flex items-center space-x-3 overflow-hidden w-full">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+              ${avatarChar}
             </div>
-            <div class="text-slate-500 truncate mt-0.5 ${isUnread ? 'font-semibold text-amber-900' : ''}">${previewText}</div>
+            <div class="truncate flex-1">
+              <div class="flex items-center justify-between">
+                <div class="font-bold text-slate-900 text-sm flex items-center truncate pr-2">
+                  ${pName} ${itemInfo}
+                </div>
+                <span class="text-[10px] text-slate-400 shrink-0">${dateStr}</span>
+              </div>
+              <div class="flex items-center justify-between mt-1">
+                <div class="text-slate-500 truncate ${isUnread ? 'font-semibold text-amber-900' : ''}">${previewText}</div>
+                ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0 ml-2">${c.unreadCount}</span>` : ''}
+              </div>
+            </div>
           </div>
         </div>
-        <div class="flex flex-col items-end shrink-0 pl-2">
-          <span class="text-[10px] text-slate-400">${new Date(c.lastMessage.created_at).toLocaleDateString()}</span>
-          ${isUnread ? `<span class="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold mt-1 shadow-sm">${c.unreadCount}</span>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  } catch (err) {
+    console.error("Error rendering message list:", err);
+    container.innerHTML = '<div class="text-center py-10 text-rose-500 text-xs">載入對話失敗，請重新整理頁面。</div>';
+  }
 }
 
 async function openChat(partnerId, auctionId, partnerName) {
   activeChatUserId = partnerId;
   activeChatAuctionId = auctionId || null;
   
-  document.getElementById('messagesListContainer').classList.add('hidden');
-  document.getElementById('messagesChatContainer').classList.remove('hidden');
-  document.getElementById('msgBackButton').classList.remove('hidden');
+  // Mobile / Desktop View Logic
+  const sidebar = document.getElementById('messagesSidebar');
+  const chatContainer = document.getElementById('messagesChatContainer');
+  
+  // On mobile: hide sidebar, show chat. On desktop: keep sidebar (sm:flex), show chat.
+  if(sidebar) { sidebar.classList.add('hidden', 'sm:flex'); sidebar.classList.remove('flex'); }
+  if(chatContainer) { chatContainer.classList.remove('hidden'); chatContainer.classList.add('flex'); }
+  
+  const emptyState = document.getElementById('messagesEmptyState');
+  if (emptyState) emptyState.classList.add('hidden');
+  
   document.getElementById('messagesModalTitle').textContent = partnerName;
   
+  showMessagesList(); // Re-render to update the active background color
   renderChatHistory();
   
   const unreadIds = userMessages
@@ -586,12 +646,22 @@ async function openChat(partnerId, auctionId, partnerName) {
     userMessages.forEach(m => {
       if (unreadIds.includes(m.id)) m.is_read = true;
     });
-    fetchUserMessages(); 
+    if (typeof updateAuthUI === 'function') {
+      const globalUnread = userMessages.filter(m => m.receiver_id === currentUser.id && !m.is_read).length;
+      const badge = document.getElementById('unreadMsgBadge');
+      if (badge) {
+        if (globalUnread > 0) { badge.textContent = globalUnread; badge.classList.remove('hidden'); }
+        else { badge.classList.add('hidden'); }
+      }
+    }
+    showMessagesList(); // Update unread bubbles in the list instantly
   }
 }
 
 function renderChatHistory() {
   const container = document.getElementById('chatHistory');
+  if (!container) return;
+  
   const threadKey = activeChatAuctionId ? `${activeChatUserId}_${activeChatAuctionId}` : `${activeChatUserId}_general`;
   const convo = getConversations().find(c => (c.auctionId ? `${c.partnerId}_${c.auctionId}` : `${c.partnerId}_general`) === threadKey);
   
@@ -608,7 +678,7 @@ function renderChatHistory() {
       <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
         <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-amber-500 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'}">
           <div class="whitespace-pre-line leading-relaxed">${safeContent}</div>
-          <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          <span class="text-[9px] mt-1.5 block opacity-70 ${isMe ? 'text-right text-amber-100' : 'text-left text-slate-400'}">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
         </div>
       </div>
     `;
@@ -620,7 +690,7 @@ function renderChatHistory() {
 }
 
 async function handleReplyMessage(e) {
-  e.preventDefault();
+  if(e) e.preventDefault();
   const input = document.getElementById('replyMsgContent');
   const content = input.value.trim();
   if (!content || !activeChatUserId) return;
@@ -630,7 +700,16 @@ async function handleReplyMessage(e) {
 
   const isMeAdmin = currentUser.isAdmin;
   const targetUserId = isMeAdmin ? activeChatUserId : currentUser.id;
-  const receiverId = isMeAdmin ? activeChatUserId : (userMessages.find(m => m.sender_id !== currentUser.id)?.sender_id || null);
+  // If not admin, the receiver is the admin we are talking to.
+  // We should extract this from the active conversation instead of just finding ANY message.
+  let receiverId = null;
+  if (isMeAdmin) {
+    receiverId = activeChatUserId;
+  } else {
+    // 找一個該對話串的歷史紀錄來判斷對方的ID
+    const msg = userMessages.find(m => (m.user_id === activeChatUserId || m.sender_id === activeChatUserId) && m.sender_id !== currentUser.id);
+    receiverId = msg ? msg.sender_id : activeChatUserId; 
+  }
 
   const tempMsg = {
     id: 'temp_' + Date.now(),
@@ -647,6 +726,7 @@ async function handleReplyMessage(e) {
   
   userMessages.push(tempMsg);
   renderChatHistory();
+  showMessagesList();
 
   const { error } = await sb.from('messages').insert([{
     user_id: targetUserId,
@@ -662,13 +742,16 @@ async function handleReplyMessage(e) {
     alert('發送失敗：' + error.message);
     userMessages = userMessages.filter(m => m.id !== tempMsg.id);
     renderChatHistory();
+    showMessagesList();
   } else {
     await fetchUserMessages();
     renderChatHistory();
+    showMessagesList();
   }
 }
 
 // ==================== [Realtime 即時監聽機制] ====================
+
 window.msgSubscription = null;
 
 function initRealtimeMessages() {

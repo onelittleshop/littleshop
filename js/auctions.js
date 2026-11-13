@@ -112,6 +112,18 @@ function switchView(view) {
   currentView = view;
   document.getElementById('tabAll').className = view === 'all' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition' : 'px-4 py-1.5 rounded-full text-sm font-medium text-slate-900 shadow-sm transition';
   document.getElementById('tabMyBids').className = view === 'my_bids' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition' : 'px-4 py-1.5 rounded-full text-sm font-medium text-slate-600 hover:bg-slate-100 transition';
+  
+  if (view === 'my_bids') {
+    // 重置所有過濾器，確保能看到完整的參標記錄
+    currentCategory = 'all';
+    const statusAll = document.querySelector('input[name="statusFilter"][value="all"]');
+    if (statusAll) statusAll.checked = true;
+    if (document.getElementById('minPriceFilter')) document.getElementById('minPriceFilter').value = '0';
+    if (document.getElementById('maxPriceFilter')) document.getElementById('maxPriceFilter').value = '999999';
+    if (document.getElementById('timeFilter')) document.getElementById('timeFilter').value = 'all';
+    if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+    renderCategories();
+  }
   renderAuctions();
 }
 
@@ -192,11 +204,14 @@ function renderAuctions() {
                           !item.isBiddable ? '<span class="absolute top-2 left-2 bg-slate-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">已鎖定</span>' :
                           '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">競標中</span>';
       const catLabel = item.subCategory ? `${item.category} · ${item.subCategory}` : item.category;
+      const highestBidderId = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderId : null;
+      const myBidStatus = (currentView === 'my_bids' && currentUser) ? (highestBidderId === currentUser.id ? `<span class="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10"><i class="fa-solid fa-crown mr-1"></i>領先中</span>` : `<span class="absolute top-2 right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">已落後</span>`) : '';
       return `
         <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden cursor-pointer hover:shadow-md transition group flex flex-col justify-between">
           <div class="relative aspect-square bg-slate-100 overflow-hidden">
             <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
             ${statusBadge}
+            ${myBidStatus}
           </div>
           <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
             <div>
@@ -220,10 +235,13 @@ function renderAuctions() {
       const img = item.images[0] || './logo.png';
       const isEnded = new Date() > new Date(item.endTime);
       const catLabel = item.subCategory ? `${item.category} / ${item.subCategory}` : item.category;
+      const highestBidderId = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderId : null;
+      const myBidStatus = (currentView === 'my_bids' && currentUser) ? (highestBidderId === currentUser.id ? `<span class="absolute top-1 right-1 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm z-10"><i class="fa-solid fa-crown mr-0.5"></i>領先</span>` : `<span class="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm z-10">落後</span>`) : '';
       return `
         <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-3 sm:p-4 cursor-pointer hover:shadow-md transition flex items-center space-x-4">
           <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
             <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-cover">
+            ${myBidStatus}
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-2 mb-1">
