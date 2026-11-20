@@ -377,8 +377,35 @@ async function openDetailModal(id) {
   document.getElementById('detailLocation').textContent = typeof formatCardLocation === 'function' ? formatCardLocation(item.location) : item.location;
   document.getElementById('detailStartPrice').textContent = item.startPrice;
   document.getElementById('detailIncrement').textContent = item.bidIncrement;
-  document.getElementById('detailPriceLabel').textContent = item.bids.length > 0 ? '目前出價' : '起標價格';
-  document.getElementById('detailCurrentPrice').textContent = '$' + (item.bids.length > 0 ? item.currentPrice : item.startPrice);
+  const isZeroStart = Number(item.startPrice) === 0;
+  const zeroBanner = document.getElementById('detailZeroStartBanner');
+  if (zeroBanner) {
+    if (isZeroStart && !(new Date() > new Date(item.endTime))) {
+      zeroBanner.classList.remove('hidden');
+      const zeroIncEl = document.getElementById('detailZeroInc');
+      if (zeroIncEl) zeroIncEl.textContent = item.bidIncrement;
+    } else {
+      zeroBanner.classList.add('hidden');
+    }
+  }
+  const priceLabelEl = document.getElementById('detailPriceLabel');
+  const currentPriceEl = document.getElementById('detailCurrentPrice');
+  if (item.bids.length > 0) {
+    priceLabelEl.textContent = '目前出價';
+    priceLabelEl.className = 'text-xs sm:text-sm font-bold text-amber-900 bg-amber-100 px-2.5 py-1 rounded-md shadow-sm';
+    currentPriceEl.textContent = '$' + item.currentPrice;
+    currentPriceEl.className = 'text-3xl font-extrabold text-amber-600';
+  } else if (isZeroStart) {
+    priceLabelEl.textContent = '💥 無底價起拍';
+    priceLabelEl.className = 'text-xs sm:text-sm font-extrabold text-white bg-rose-600 px-2.5 py-1 rounded-md shadow-sm';
+    currentPriceEl.textContent = '$0 起';
+    currentPriceEl.className = 'text-3xl font-black text-rose-600';
+  } else {
+    priceLabelEl.textContent = '起標價格';
+    priceLabelEl.className = 'text-xs sm:text-sm font-bold text-amber-900 bg-amber-100 px-2.5 py-1 rounded-md shadow-sm';
+    currentPriceEl.textContent = '$' + item.startPrice;
+    currentPriceEl.className = 'text-3xl font-extrabold text-amber-600';
+  }
   document.getElementById('detailBidCount').textContent = item.bids.length;
 
   const highestBidder = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderName : '暫無出價';

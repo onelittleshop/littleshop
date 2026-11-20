@@ -227,24 +227,36 @@ function renderAuctions() {
     return 0;
   });
 
+  const pinnedSection = document.getElementById('pinnedSection');
+  const pinnedGrid = document.getElementById('pinnedGrid');
+  const pinnedZeroTag = document.getElementById('pinnedZeroPromoTag');
+  const regularHeader = document.getElementById('regularSectionHeader');
+
   if (list.length === 0) {
+    if (pinnedSection) pinnedSection.classList.add('hidden');
+    if (regularHeader) regularHeader.classList.add('hidden');
     grid.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
 
-  if (currentLayout === 'grid') {
-    grid.className = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6";
-    grid.innerHTML = list.map(item => {
-      const img = item.images[0] || './logo.png';
-      const isEnded = new Date() > new Date(item.endTime);
-      const statusBadge = !item.isVisible ? '<span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">已隱藏</span>' :
-                          isEnded ? '<span class="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">已截標</span>' : 
-                          !item.isBiddable ? '<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">即將開標</span>' :
-                          '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">競標中</span>';
-      const catLabel = item.subCategory ? `${item.category} · ${item.subCategory}` : item.category;
-      const highestBidderId = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderId : null;
+  const buildCardHtml = (item) => {
+    const img = item.images[0] || './logo.png';
+    const isEnded = new Date() > new Date(item.endTime);
+    const isZeroStart = Number(item.startPrice) === 0;
+    const hasBids = item.bids.length > 0;
+    const catLabel = item.subCategory ? `${item.category} · ${item.subCategory}` : item.category;
+    const highestBidderId = hasBids ? item.bids[item.bids.length - 1].bidderId : null;
+    const t = formatCardEndTime(item.endTime);
+    const timeCls = t.ended ? 'text-rose-400' : (t.urgent ? 'text-rose-600 font-bold' : 'text-slate-400');
+
+    if (currentLayout === 'grid') {
+      const statusBadge = !item.isVisible ? '<span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm z-10">已隱藏</span>' :
+                          isEnded ? '<span class="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">已截標</span>' : 
+                          !item.isBiddable ? '<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">即將開標</span>' :
+                          '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">競標中</span>';
+
       let myBidStatus = '';
       if (currentUser && (currentView === 'my_bids' || currentView === 'my_won_bids')) {
           if (isEnded && highestBidderId === currentUser.id) {
@@ -255,15 +267,42 @@ function renderAuctions() {
               myBidStatus = `<span class="absolute top-2 right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">已落後</span>`;
           }
       }
-      const pinBadge = item.isPinned ? `<span class="absolute bottom-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10"><i class="fa-solid fa-fire mr-1"></i>矚目精選</span>` : '';
-      const cardBorder = item.isPinned ? 'border-amber-300 ring-1 ring-amber-200/80' : 'border-slate-100';
+
+      // 頂部橫向色帶 (置頂專用)
+      const topRibbon = item.isPinned
+        ? `<div class="bg-gradient-to-r ${isZeroStart ? 'from-rose-600 via-orange-500 to-amber-500' : 'from-amber-500 to-orange-500'} text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 flex items-center justify-between tracking-wide">
+             <span><i class="fa-solid fa-crown mr-1"></i>矚目置頂</span>
+             ${isZeroStart ? '<span class="bg-white/20 px-1.5 py-0.2 rounded text-[9px] sm:text-[10px]">💥 0元起拍</span>' : '<span class="opacity-90 text-[9px]">精選推介</span>'}
+           </div>`
+        : '';
+
+      // 0元起拍浮標 (非置頂商品，或置頂已有人出價時加強提示)
+      const zeroCornerBadge = (isZeroStart && !isEnded && (!myBidStatus))
+        ? `<span class="absolute bottom-2 left-2 bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-md z-10 ${!hasBids ? 'animate-pulse' : ''}">${hasBids ? '💥 0元起拍熱搶中' : '💥 0元起拍'}</span>`
+        : '';
+
+      const cardBorder = item.isPinned
+        ? 'border-2 border-amber-400 ring-2 ring-amber-200/70 shadow-md'
+        : (isZeroStart && !isEnded ? 'border border-rose-200 shadow-sm' : 'border border-slate-100 shadow-sm');
+
+      const priceLeftLabel = hasBids
+        ? `目前出價 (${item.bids.length}口)`
+        : (isZeroStart ? '<span class="text-rose-600 font-extrabold">無底價起拍</span>' : '起標價格');
+
+      const priceRightHtml = hasBids
+        ? `<span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.currentPrice}</span>`
+        : (isZeroStart
+            ? `<div class="flex items-center gap-1"><span class="text-[9px] font-extrabold bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">搶頭香</span><span class="text-base sm:text-lg font-black text-rose-600">$0 起</span></div>`
+            : `<span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.startPrice}</span>`);
+
       return `
-        <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border ${cardBorder} overflow-hidden cursor-pointer hover:shadow-md transition group flex flex-col justify-between">
+        <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl ${cardBorder} overflow-hidden cursor-pointer hover:shadow-lg transition group flex flex-col justify-between">
+          ${topRibbon}
           <div class="relative aspect-square bg-slate-100 overflow-hidden">
             <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-contain p-1 group-hover:scale-105 transition duration-300">
             ${statusBadge}
             ${myBidStatus}
-            ${pinBadge}
+            ${zeroCornerBadge}
           </div>
           <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
             <div>
@@ -274,27 +313,17 @@ function renderAuctions() {
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
             <div class="mt-2 pt-2 border-t border-slate-100">
-              <div class="flex items-baseline justify-between">
-                <span class="text-[10px] text-slate-400">${item.bids.length > 0 ? `目前出價 (${item.bids.length}口)` : '起標價格'}</span>
-                <span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
+              <div class="flex items-baseline justify-between gap-1">
+                <span class="text-[10px] text-slate-400">${priceLeftLabel}</span>
+                ${priceRightHtml}
               </div>
-              ${(() => {
-                const t = formatCardEndTime(item.endTime);
-                const cls = t.ended ? 'text-rose-400' : (t.urgent ? 'text-rose-600 font-bold' : 'text-slate-400');
-                return `<div class="text-[10px] mt-1 ${cls} flex items-center"><i class="fa-regular fa-clock mr-1"></i>${t.text}</div>`;
-              })()}
+              <div class="text-[10px] mt-1 ${timeCls} flex items-center"><i class="fa-regular fa-clock mr-1"></i>${t.text}</div>
             </div>
           </div>
         </div>
       `;
-    }).join('');
-  } else {
-    grid.className = "grid grid-cols-1 gap-3";
-    grid.innerHTML = list.map(item => {
-      const img = item.images[0] || './logo.png';
-      const isEnded = new Date() > new Date(item.endTime);
-      const catLabel = item.subCategory ? `${item.category} / ${item.subCategory}` : item.category;
-      const highestBidderId = item.bids.length > 0 ? item.bids[item.bids.length - 1].bidderId : null;
+    } else {
+      const catLabelSlash = item.subCategory ? `${item.category} / ${item.subCategory}` : item.category;
       let myBidStatus = '';
       if (currentUser && (currentView === 'my_bids' || currentView === 'my_won_bids')) {
           if (isEnded && highestBidderId === currentUser.id) {
@@ -305,10 +334,18 @@ function renderAuctions() {
               myBidStatus = `<span class="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm z-10">落後</span>`;
           }
       }
-      const listBorder = item.isPinned ? 'border-amber-300 ring-1 ring-amber-200/80 bg-amber-50/20' : 'border-slate-100 bg-white';
-      const listPinBadge = item.isPinned ? `<span class="text-[10px] font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded"><i class="fa-solid fa-fire mr-0.5"></i>矚目</span>` : '';
+      const listBorder = item.isPinned ? 'border-2 border-amber-400 ring-1 ring-amber-200 bg-white shadow-md' : 'border border-slate-100 bg-white shadow-sm';
+      const listPinBadge = item.isPinned ? `<span class="text-[10px] font-extrabold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded"><i class="fa-solid fa-crown mr-0.5"></i>矚目置頂</span>` : '';
+      const listZeroBadge = (isZeroStart && !isEnded) ? `<span class="text-[10px] font-extrabold text-white bg-rose-600 px-1.5 py-0.5 rounded ${!hasBids ? 'animate-pulse' : ''}">💥 0元起拍</span>` : '';
+      const listPriceLabel = hasBids ? '目前出價' : (isZeroStart ? '<span class="text-rose-600 font-bold">無底價起拍</span>' : '起標價格');
+      const listPriceVal = hasBids
+        ? `<span class="text-base sm:text-lg font-extrabold text-amber-600">$${item.currentPrice}</span>`
+        : (isZeroStart
+            ? `<span class="text-base sm:text-lg font-black text-rose-600">$0 起</span>`
+            : `<span class="text-base sm:text-lg font-extrabold text-amber-600">$${item.startPrice}</span>`);
+
       return `
-        <div onclick="openDetailModal('${item.id}')" class="rounded-2xl shadow-sm border ${listBorder} p-3 sm:p-4 cursor-pointer hover:shadow-md transition flex items-center space-x-4">
+        <div onclick="openDetailModal('${item.id}')" class="rounded-2xl ${listBorder} p-3 sm:p-4 cursor-pointer hover:shadow-md transition flex items-center space-x-4">
           <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
             <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-contain p-0.5">
             ${myBidStatus}
@@ -316,7 +353,8 @@ function renderAuctions() {
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-1.5 mb-1">
               ${listPinBadge}
-              <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
+              ${listZeroBadge}
+              <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabelSlash}</span>
               <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${formatCardLocation(item.location)}</span>
               <span class="text-[10px] ${!item.isVisible ? 'text-slate-500' : isEnded ? 'text-rose-500' : !item.isBiddable ? 'text-slate-600' : 'text-emerald-600'} font-bold">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : !item.isBiddable ? '即將開標' : '競標中')}</span>
             </div>
@@ -324,17 +362,47 @@ function renderAuctions() {
             <p class="text-xs text-slate-500 truncate mt-0.5">${item.desc || '無描述'}</p>
           </div>
           <div class="text-right shrink-0 pl-2">
-            <span class="text-[10px] text-slate-400 block">${item.bids.length > 0 ? '目前出價' : '起標價格'}</span>
-            <span class="text-base sm:text-lg font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
-            ${(() => {
-              const t = formatCardEndTime(item.endTime);
-              const cls = t.ended ? 'text-rose-400' : (t.urgent ? 'text-rose-600 font-bold' : 'text-slate-400');
-              return `<span class="text-[10px] block mt-0.5 ${cls}">${t.text}</span>`;
-            })()}
+            <span class="text-[10px] text-slate-400 block">${listPriceLabel}</span>
+            ${listPriceVal}
+            <span class="text-[10px] block mt-0.5 ${timeCls}">${t.text}</span>
           </div>
         </div>
       `;
-    }).join('');
+    }
+  };
+
+  const pinnedItems = list.filter(item => item.isPinned);
+  const regularItems = list.filter(item => !item.isPinned);
+  const gridCls = currentLayout === 'grid'
+    ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6'
+    : 'grid grid-cols-1 gap-3';
+
+  if (pinnedItems.length > 0 && pinnedSection && pinnedGrid) {
+    pinnedSection.classList.remove('hidden');
+    pinnedGrid.className = currentLayout === 'grid'
+      ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5'
+      : 'grid grid-cols-1 gap-3';
+    pinnedGrid.innerHTML = pinnedItems.map(buildCardHtml).join('');
+
+    if (pinnedZeroTag) {
+      const hasZeroPinned = pinnedItems.some(i => Number(i.startPrice) === 0);
+      if (hasZeroPinned) pinnedZeroTag.classList.remove('hidden');
+      else pinnedZeroTag.classList.add('hidden');
+    }
+
+    if (regularItems.length > 0) {
+      if (regularHeader) regularHeader.classList.remove('hidden');
+      grid.className = gridCls;
+      grid.innerHTML = regularItems.map(buildCardHtml).join('');
+    } else {
+      if (regularHeader) regularHeader.classList.add('hidden');
+      grid.innerHTML = '';
+    }
+  } else {
+    if (pinnedSection) pinnedSection.classList.add('hidden');
+    if (regularHeader) regularHeader.classList.add('hidden');
+    grid.className = gridCls;
+    grid.innerHTML = list.map(buildCardHtml).join('');
   }
 }
 

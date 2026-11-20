@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795164275">
+  <link rel="stylesheet" href="./css/style.css?v=1795164920">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -191,6 +191,28 @@
   </div>
 
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 relative">
+    <!-- 🔥 獨立置頂矚目精選區 -->
+    <section id="pinnedSection" class="hidden mb-6 bg-gradient-to-br from-amber-50 via-orange-50/70 to-rose-50/50 border-2 border-amber-300/90 rounded-3xl p-3.5 sm:p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-amber-200/80">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 text-white shadow-sm text-xs">
+            <i class="fa-solid fa-crown"></i>
+          </span>
+          <h2 class="text-sm sm:text-base font-extrabold text-amber-950 tracking-tight">本期矚目精選・置頂推介</h2>
+          <span id="pinnedZeroPromoTag" class="hidden inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold bg-rose-600 text-white shadow-sm animate-pulse">
+            💥 0元無底價起拍
+          </span>
+        </div>
+        <span class="text-[11px] font-bold text-amber-800/80">全場焦點・限時搶標</span>
+      </div>
+      <div id="pinnedGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"></div>
+    </section>
+
+    <div id="regularSectionHeader" class="hidden flex items-center gap-2 mb-3">
+      <h2 class="text-xs sm:text-sm font-bold text-slate-600"><i class="fa-solid fa-layer-group text-amber-500 mr-1.5"></i>全部拍賣品</h2>
+      <div class="flex-1 h-px bg-slate-200"></div>
+    </div>
+
     <div id="auctionsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"></div>
     <div id="emptyState" class="hidden text-center py-16">
       <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 text-slate-400 mb-4">
@@ -594,6 +616,10 @@
             </div>
           </div>
 
+          <div id="detailZeroStartBanner" class="hidden mt-3 -mb-2 bg-gradient-to-r from-rose-600 via-rose-500 to-orange-500 text-white rounded-xl px-3.5 py-2 text-xs font-bold shadow-sm flex items-center justify-between">
+            <span><i class="fa-solid fa-fire-flame-curved mr-1.5"></i>本品為 $0 無底價起拍，每口只需 +$<span id="detailZeroInc">5</span>，隨時超筍價入手！</span>
+          </div>
+
           <div class="my-4 bg-slate-50 rounded-xl p-4 border border-slate-200/80">
             <div class="flex justify-between items-center mb-1">
               <span class="text-xs sm:text-sm font-bold text-amber-900 bg-amber-100 px-2.5 py-1 rounded-md shadow-sm" id="detailPriceLabel">目前最高價</span>
@@ -702,10 +728,10 @@
   <!-- ==================== [全域輕提示 Toast] ==================== -->
   <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[70] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-sm"></div>
 
-  <script src="./js/config.js?v=1795164275"></script>
-  <script src="./js/analytics.js?v=1795164275"></script>
-  <script src="./js/auth.js?v=1795164275"></script>
-  <script src="./js/auctions.js?v=1795164275"></script>
-  <script src="./js/ui.js?v=1795164275"></script>
+  <script src="./js/config.js?v=1795164920"></script>
+  <script src="./js/analytics.js?v=1795164920"></script>
+  <script src="./js/auth.js?v=1795164920"></script>
+  <script src="./js/auctions.js?v=1795164920"></script>
+  <script src="./js/ui.js?v=1795164920"></script>
 </body>
 </html>
