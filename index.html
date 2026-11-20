@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795160869">
+  <link rel="stylesheet" href="./css/style.css?v=1795161089">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -519,6 +519,9 @@
 
           <span id="detailStatusBadge" class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold z-20"></span>
           <div id="multiImgIndicator" class="absolute bottom-3 left-0 right-0 flex justify-center z-20 hidden pointer-events-none"></div>
+          <button id="detailZoomHint" type="button" onclick="openImageLightbox(currentDetailImageIdx)" class="hidden absolute bottom-2.5 right-2.5 bg-black/50 hover:bg-black/75 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm z-20 transition flex items-center shadow-sm">
+            <i class="fa-solid fa-magnifying-glass-plus mr-1"></i>點擊放大
+          </button>
         </div>
         
         <div class="p-5 bg-white border-t border-slate-100 flex-1">
@@ -604,10 +607,34 @@
     </div>
   </div>
 
-  <script src="./js/config.js?v=1795160869"></script>
-  <script src="./js/analytics.js?v=1795160869"></script>
-  <script src="./js/auth.js?v=1795160869"></script>
-  <script src="./js/auctions.js?v=1795160869"></script>
-  <script src="./js/ui.js?v=1795160869"></script>
+  <!-- ==================== [商品圖片全螢幕放大檢視 Lightbox] ==================== -->
+  <div id="imageLightboxModal" onclick="if(event.target === this) closeImageLightbox()" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center p-4 select-none">
+    <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-none">
+      <span id="lightboxCounter" class="text-white/80 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-sm"></span>
+      <button type="button" onclick="closeImageLightbox()" class="pointer-events-auto w-10 h-10 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition backdrop-blur-sm">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+
+    <div class="relative w-full h-full flex items-center justify-center" onclick="if(event.target === this) closeImageLightbox()">
+      <button id="lightboxPrevBtn" type="button" onclick="event.stopPropagation(); navigateLightbox(-1)" class="hidden absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center z-20 transition backdrop-blur-sm">
+        <i class="fa-solid fa-chevron-left text-base"></i>
+      </button>
+
+      <img id="lightboxImg" src="" alt="放大圖片" class="max-w-[95vw] max-h-[82vh] object-contain rounded-lg shadow-2xl transition-opacity duration-150" onclick="event.stopPropagation()">
+
+      <button id="lightboxNextBtn" type="button" onclick="event.stopPropagation(); navigateLightbox(1)" class="hidden absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center z-20 transition backdrop-blur-sm">
+        <i class="fa-solid fa-chevron-right text-base"></i>
+      </button>
+    </div>
+
+    <div class="absolute bottom-4 text-white/60 text-[11px] pointer-events-none">點擊空白處或右上角關閉</div>
+  </div>
+
+  <script src="./js/config.js?v=1795161089"></script>
+  <script src="./js/analytics.js?v=1795161089"></script>
+  <script src="./js/auth.js?v=1795161089"></script>
+  <script src="./js/auctions.js?v=1795161089"></script>
+  <script src="./js/ui.js?v=1795161089"></script>
 </body>
 </html>

@@ -353,17 +353,20 @@ function renderDetailImages(images) {
   const indicator = document.getElementById('multiImgIndicator');
   const prevBtn = document.getElementById('prevImgBtn');
   const nextBtn = document.getElementById('nextImgBtn');
+  const zoomHint = document.getElementById('detailZoomHint');
 
   if (!images || images.length === 0) {
     container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 font-bold text-sm"><img src="./logo.png" class="w-full h-full object-contain p-8"></div>`;
     indicator.classList.add('hidden');
     prevBtn.classList.add('hidden');
     nextBtn.classList.add('hidden');
+    if (zoomHint) zoomHint.classList.add('hidden');
     return;
   }
 
-  container.innerHTML = images.map(src => `<div class="w-full h-full shrink-0 snap-center flex items-center justify-center bg-slate-100"><img src="${src}" onerror="this.src='./logo.png'" class="w-full h-full object-contain"></div>`).join('');
-  
+  container.innerHTML = images.map((src, idx) => `<div onclick="openImageLightbox(${idx})" class="w-full h-full shrink-0 snap-center flex items-center justify-center bg-slate-100 cursor-zoom-in"><img src="${src}" onerror="this.src='./logo.png'" class="w-full h-full object-contain"></div>`).join('');
+  if (zoomHint) zoomHint.classList.remove('hidden');
+
   if (images.length > 1) {
     indicator.classList.remove('hidden');
     prevBtn.classList.remove('hidden');
@@ -1026,3 +1029,79 @@ async function adminBlacklistUser(userId, userName) {
     alert(`🚫 已將【${userName}】列入黑名單！`);
   }
 }
+
+// ==================== [商品圖片全螢幕放大檢視 Lightbox] ====================
+let lightboxImages = [];
+let lightboxCurrentIdx = 0;
+let lightboxTouchStartX = 0;
+
+function openImageLightbox(startIdx = 0) {
+  const item = auctions.find(a => a.id === activeDetailId);
+  if (!item || !item.images || item.images.length === 0) return;
+
+  lightboxImages = item.images;
+  lightboxCurrentIdx = (startIdx >= 0 && startIdx < lightboxImages.length) ? startIdx : 0;
+
+  const modal = document.getElementById('imageLightboxModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  updateLightboxView();
+}
+
+function updateLightboxView() {
+  const imgEl = document.getElementById('lightboxImg');
+  const counterEl = document.getElementById('lightboxCounter');
+  const prevBtn = document.getElementById('lightboxPrevBtn');
+  const nextBtn = document.getElementById('lightboxNextBtn');
+
+  if (imgEl && lightboxImages[lightboxCurrentIdx]) {
+    imgEl.src = lightboxImages[lightboxCurrentIdx];
+  }
+  if (counterEl) {
+    counterEl.textContent = lightboxImages.length > 1 ? `${lightboxCurrentIdx + 1} / ${lightboxImages.length}` : '原圖檢視';
+  }
+  if (prevBtn && nextBtn) {
+    if (lightboxImages.length > 1) {
+      prevBtn.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+    } else {
+      prevBtn.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+    }
+  }
+}
+
+function navigateLightbox(direction) {
+  if (lightboxImages.length <= 1) return;
+  lightboxCurrentIdx += direction;
+  if (lightboxCurrentIdx < 0) lightboxCurrentIdx = lightboxImages.length - 1;
+  if (lightboxCurrentIdx >= lightboxImages.length) lightboxCurrentIdx = 0;
+  updateLightboxView();
+}
+
+function closeImageLightbox() {
+  const modal = document.getElementById('imageLightboxModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('imageLightboxModal');
+  if (!modal || modal.classList.contains('hidden')) return;
+  if (e.key === 'Escape') closeImageLightbox();
+  else if (e.key === 'ArrowLeft') navigateLightbox(-1);
+  else if (e.key === 'ArrowRight') navigateLightbox(1);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('imageLightboxModal');
+  if (!modal) return;
+  modal.addEventListener('touchstart', (e) => {
+    lightboxTouchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  modal.addEventListener('touchend', (e) => {
+    const diff = e.changedTouches[0].screenX - lightboxTouchStartX;
+    if (Math.abs(diff) > 40) {
+      navigateLightbox(diff > 0 ? -1 : 1);
+    }
+  }, { passive: true });
+});
