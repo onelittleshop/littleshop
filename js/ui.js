@@ -363,6 +363,10 @@ async function openDetailModal(id) {
   activeDetailId = id;
   const item = auctions.find(a => a.id === id);
   if (!item) return;
+  if (typeof markItemAsSeen === 'function') {
+    markItemAsSeen(id);
+    if (typeof renderAuctions === 'function') renderAuctions();
+  }
   
   // 修改網址，加上 ?item= 參數，但不重新載入頁面
   const url = new URL(window.location);

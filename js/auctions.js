@@ -1,4 +1,37 @@
 
+const SEEN_ITEMS_STORAGE_KEY = 'littleshop_seen_item_ids_v1';
+
+function getSeenItemIds() {
+  try {
+    const raw = localStorage.getItem(SEEN_ITEMS_STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function markItemAsSeen(itemId) {
+  if (!itemId) return;
+  try {
+    const set = getSeenItemIds();
+    if (!set.has(itemId)) {
+      set.add(itemId);
+      localStorage.setItem(SEEN_ITEMS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+    }
+  } catch (e) {}
+}
+
+function isNewUnseenItem(item, seenSet) {
+  if (!item || !item.id || seenSet.has(item.id)) return false;
+  const isEnded = new Date() > new Date(item.endTime);
+  if (isEnded) return false;
+  if (!item.createdAt) return true;
+  const ageMs = Date.now() - new Date(item.createdAt).getTime();
+  return ageMs <= 7 * 24 * 60 * 60 * 1000;
+}
+
+
 function formatCardLocation(loc) {
   const s = String(loc || '面交 · 葵興地鐵站');
   if (s.includes('順豐')) return s;
@@ -240,6 +273,7 @@ function renderAuctions() {
     return;
   }
   empty.classList.add('hidden');
+  const seenItemIds = getSeenItemIds();
 
   const buildCardHtml = (item) => {
     const img = item.images[0] || './logo.png';
@@ -252,10 +286,20 @@ function renderAuctions() {
     const timeCls = t.ended ? 'text-rose-400' : (t.urgent ? 'text-rose-600 font-bold' : 'text-slate-400');
 
     if (currentLayout === 'grid') {
+      const isNewUnseen = isNewUnseenItem(item, seenItemIds);
+      const isSeen = Boolean(item.id && seenItemIds.has(item.id));
       const statusBadge = !item.isVisible ? '<span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm z-10">已隱藏</span>' :
                           isEnded ? '<span class="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">已截標</span>' : 
                           !item.isBiddable ? '<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">即將開標</span>' :
                           '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">競標中</span>';
+
+      const unseenBadge = (!myBidStatus && isNewUnseen)
+        ? '<span class="absolute top-2 right-2 bg-sky-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-sm z-10">未睇過</span>'
+        : '';
+
+      const seenPill = isSeen
+        ? '<span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-regular fa-eye mr-0.5"></i>已睇過</span>'
+        : '';
 
       let myBidStatus = '';
       if (currentUser && (currentView === 'my_bids' || currentView === 'my_won_bids')) {
@@ -299,9 +343,9 @@ function renderAuctions() {
         <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl ${cardBorder} overflow-hidden cursor-pointer hover:shadow-lg transition group flex flex-col justify-between">
           ${topRibbon}
           <div class="relative aspect-square bg-slate-100 overflow-hidden">
-            <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-contain p-1 group-hover:scale-105 transition duration-300">
+            <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-contain p-1 group-hover:scale-105 transition duration-300 ${isSeen && !isEnded ? 'opacity-90' : ''}">
             ${statusBadge}
-            ${myBidStatus}
+            ${myBidStatus || unseenBadge}
             ${zeroCornerBadge}
           </div>
           <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
@@ -309,6 +353,7 @@ function renderAuctions() {
               <div class="flex flex-wrap items-center gap-1 mb-1">
                 <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
                 <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${formatCardLocation(item.location)}</span>
+                ${seenPill}
               </div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
@@ -357,6 +402,7 @@ function renderAuctions() {
               <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabelSlash}</span>
               <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${formatCardLocation(item.location)}</span>
               <span class="text-[10px] ${!item.isVisible ? 'text-slate-500' : isEnded ? 'text-rose-500' : !item.isBiddable ? 'text-slate-600' : 'text-emerald-600'} font-bold">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : !item.isBiddable ? '即將開標' : '競標中')}</span>
+              ${(!myBidStatus && isNewUnseenItem(item, seenItemIds)) ? '<span class="text-[10px] font-extrabold text-white bg-sky-600 px-1.5 py-0.5 rounded">未睇過</span>' : (seenItemIds.has(item.id) ? '<span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-regular fa-eye mr-0.5"></i>已睇過</span>' : '')}
             </div>
             <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">${item.title}</h3>
             <p class="text-xs text-slate-500 truncate mt-0.5">${item.desc || '無描述'}</p>
