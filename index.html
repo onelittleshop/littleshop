@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795161089">
+  <link rel="stylesheet" href="./css/style.css?v=1795161696">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -179,9 +179,12 @@
             </div>
           </div>
         </div>
-        <div class="flex space-x-2 shrink-0 self-end sm:self-auto">
-          <button onclick="openAdminMsgModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shrink-0"><i class="fa-solid fa-paper-plane mr-1"></i> 發送訊息</button>
-          <button onclick="openUploadModal()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shrink-0">+ 新增拍賣品</button>
+        <div class="flex flex-wrap gap-2 shrink-0 self-end sm:self-auto">
+          <button onclick="openSettlementModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm shrink-0 transition"><i class="fa-solid fa-clipboard-check mr-1"></i> 結算總覽</button>
+          <button onclick="bulkSetBiddable(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm shrink-0 transition"><i class="fa-solid fa-lock-open mr-1"></i> 全部開標</button>
+          <button onclick="bulkSetBiddable(false)" class="bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm shrink-0 transition"><i class="fa-solid fa-lock mr-1"></i> 全部鎖定</button>
+          <button onclick="openAdminMsgModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm shrink-0 transition"><i class="fa-solid fa-paper-plane mr-1"></i> 發送訊息</button>
+          <button onclick="openUploadModal()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm shrink-0 transition">+ 新增拍賣品</button>
         </div>
       </div>
     </div>
@@ -377,12 +380,12 @@
   <div id="uploadModal" onclick="if(event.target === this) closeUploadModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-6 shadow-xl modal-enter my-8 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-gavel text-amber-500 mr-2"></i>官方上架新拍賣品</h3>
+        <h3 id="uploadModalTitle" class="text-lg font-bold text-slate-900"><i class="fa-solid fa-gavel text-amber-500 mr-2"></i>官方上架新拍賣品</h3>
         <button type="button" onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
             <form id="uploadForm" onsubmit="handleCreateAuction(event)" class="space-y-4">
         <div class="mb-3">
-          <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center">
+          <button type="submit" id="quickPublishBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center">
             <i class="fa-solid fa-gavel mr-1.5"></i> 快速發布競標
           </button>
         </div>
@@ -502,9 +505,11 @@
       <div class="md:col-span-6 bg-slate-100 flex flex-col justify-between relative group">
         <div id="adminActionGroup" class="hidden absolute top-3 right-3 z-30 flex flex-col gap-1.5 items-end">
           <div id="adminItemViewBadge" class="bg-slate-800/80 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md mb-1"><i class="fa-regular fa-eye mr-1"></i>載入中...</div>
+          <button id="adminEditBtn" onclick="openEditAuctionModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition"><i class="fa-solid fa-pen-to-square mr-1"></i>編輯商品</button>
           <button id="adminPinBtn" onclick="toggleAuctionPinned()"></button>
           <button id="adminVisibilityBtn" onclick="toggleAuctionVisibility()"></button>
           <button id="adminBiddableBtn" onclick="toggleAuctionBiddable()"></button>
+          <button id="adminDeleteBtn" onclick="deleteActiveAuction()" class="bg-rose-700 hover:bg-rose-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition"><i class="fa-solid fa-trash mr-1"></i>刪除商品</button>
         </div>
         
         <div class="relative h-72 md:h-96 bg-slate-100">
@@ -607,6 +612,29 @@
     </div>
   </div>
 
+  <!-- ==================== [管理員結算總覽與黑名單管理 Modal] ==================== -->
+  <div id="settlementModal" onclick="if(event.target === this) closeSettlementModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl modal-enter flex flex-col max-h-[90vh]">
+      <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100 shrink-0">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900"><i class="fa-solid fa-clipboard-check text-indigo-600 mr-2"></i>管理員結算總覽 & 黑名單管理</h3>
+          <p id="settlementSummaryText" class="text-[11px] text-slate-500 mt-0.5">載入中...</p>
+        </div>
+        <button onclick="closeSettlementModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-4 shrink-0">
+        <button id="settleTabEnded" onclick="switchSettlementTab('ended')" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-sm transition">🏆 已截標有出價</button>
+        <button id="settleTabAll" onclick="switchSettlementTab('all')" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">🔥 全部有出價</button>
+        <button id="settleTabBlacklist" onclick="switchSettlementTab('blacklist')" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">🚫 黑名單管理</button>
+      </div>
+
+      <div id="settlementContent" class="flex-1 overflow-y-auto space-y-3 pr-1 no-scrollbar">
+        <div class="text-center py-8 text-slate-400 text-xs">資料載入中...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== [商品圖片全螢幕放大檢視 Lightbox] ==================== -->
   <div id="imageLightboxModal" onclick="if(event.target === this) closeImageLightbox()" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center p-4 select-none">
     <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-none">
@@ -631,10 +659,10 @@
     <div class="absolute bottom-4 text-white/60 text-[11px] pointer-events-none">點擊空白處或右上角關閉</div>
   </div>
 
-  <script src="./js/config.js?v=1795161089"></script>
-  <script src="./js/analytics.js?v=1795161089"></script>
-  <script src="./js/auth.js?v=1795161089"></script>
-  <script src="./js/auctions.js?v=1795161089"></script>
-  <script src="./js/ui.js?v=1795161089"></script>
+  <script src="./js/config.js?v=1795161696"></script>
+  <script src="./js/analytics.js?v=1795161696"></script>
+  <script src="./js/auth.js?v=1795161696"></script>
+  <script src="./js/auctions.js?v=1795161696"></script>
+  <script src="./js/ui.js?v=1795161696"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 // ==================== [模塊：Auctions & Bidding] ====================
 let tempImagesBase64 = [];
+let editingAuctionId = null;
 let activeDetailId = null;
 let currentDetailImageIdx = 0;
 let detailInterval = null;
@@ -348,31 +349,58 @@ async function handleCreateAuction(e) {
     }
   }
 
-  const newItem = {
-    title,
-    category,
-    sub_category: subCategory || null,
-    start_price: startPrice,
-    bid_increment: bidIncrement,
-    current_price: 0,
-    end_time: endTime,
-    location: `${method} · ${location}`,
-    description: desc,
-    image_url: JSON.stringify(tempImagesBase64),
-    is_visible: true,
-    is_biddable: false, // 預設不能下標 (鎖定狀態)
-    is_pinned: document.getElementById('itemIsPinned')?.checked || false,
-    seller_id: currentUser.id,
-    seller_name: currentUser.nickname
-  };
+  const isPinned = document.getElementById('itemIsPinned')?.checked || false;
 
-  const { error } = await sb.from('auctions').insert([newItem]);
-  if (error) {
-    alert('上架失敗：' + error.message);
+  if (editingAuctionId) {
+    const targetId = editingAuctionId;
+    const updatePayload = {
+      title,
+      category,
+      sub_category: subCategory || null,
+      start_price: startPrice,
+      bid_increment: bidIncrement,
+      end_time: endTime,
+      location: `${method} · ${location}`,
+      description: desc,
+      image_url: JSON.stringify(tempImagesBase64),
+      is_pinned: isPinned
+    };
+    const { error } = await sb.from('auctions').update(updatePayload).eq('id', targetId);
+    if (error) {
+      alert('儲存修改失敗：' + error.message);
+    } else {
+      alert('✨ 拍賣品資料已更新！');
+      closeUploadModal();
+      await fetchAuctions();
+      openDetailModal(targetId);
+    }
   } else {
-    alert('✨ 拍賣品成功上架，新分類已自動儲存！');
-    closeUploadModal();
-    await fetchAuctions();
+    const newItem = {
+      title,
+      category,
+      sub_category: subCategory || null,
+      start_price: startPrice,
+      bid_increment: bidIncrement,
+      current_price: 0,
+      end_time: endTime,
+      location: `${method} · ${location}`,
+      description: desc,
+      image_url: JSON.stringify(tempImagesBase64),
+      is_visible: true,
+      is_biddable: false, // 預設不能下標 (鎖定狀態)
+      is_pinned: isPinned,
+      seller_id: currentUser.id,
+      seller_name: currentUser.nickname
+    };
+
+    const { error } = await sb.from('auctions').insert([newItem]);
+    if (error) {
+      alert('上架失敗：' + error.message);
+    } else {
+      alert('✨ 拍賣品成功上架，新分類已自動儲存！');
+      closeUploadModal();
+      await fetchAuctions();
+    }
   }
 }
 async function placeBid(itemId) {

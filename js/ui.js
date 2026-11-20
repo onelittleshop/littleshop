@@ -85,8 +85,44 @@ function openProfileModal(isForced) {
   }
 }
 
+function renderUploadImagePreviews() {
+  const container = document.getElementById('imagePreviewContainer');
+  const placeholder = document.getElementById('uploadPlaceholder');
+  if (!container || !placeholder) return;
+  if (tempImagesBase64.length === 0) {
+    placeholder.classList.remove('hidden');
+    container.classList.add('hidden');
+    container.innerHTML = '';
+  } else {
+    container.innerHTML = tempImagesBase64.map((src, i) => `
+      <div class="relative w-24 h-24 shrink-0 rounded-lg overflow-hidden border border-slate-200">
+        <img src="${src}" class="w-full h-full object-cover">
+        <button type="button" onclick="removeTempImage(${i})" class="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] flex items-center justify-center">×</button>
+      </div>
+    `).join('');
+    placeholder.classList.add('hidden');
+    container.classList.remove('hidden');
+  }
+}
+
 function openUploadModal() {
   if (!currentUser?.isAdmin) return alert('權限不足');
+  editingAuctionId = null;
+  document.getElementById('uploadForm')?.reset();
+  tempImagesBase64 = [];
+  renderUploadImagePreviews();
+
+  if (typeof isCustomCategoryMode !== 'undefined' && isCustomCategoryMode) {
+    toggleNewCategoryInput();
+  }
+
+  const titleEl = document.getElementById('uploadModalTitle');
+  if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-gavel text-amber-500 mr-2"></i>官方上架新拍賣品';
+  const quickBtn = document.getElementById('quickPublishBtn');
+  if (quickBtn) quickBtn.innerHTML = '<i class="fa-solid fa-gavel mr-1.5"></i> 快速發布競標';
+  const pubBtn = document.getElementById('publishBtn');
+  if (pubBtn) pubBtn.textContent = '發布競標';
+
   const modal = document.getElementById('uploadModal');
   if (modal) modal.classList.remove('hidden');
   
@@ -94,19 +130,84 @@ function openUploadModal() {
   if (endInput) {
     // 預設 2026年11月23日 22:00 HKT
     const targetDate = new Date('2026-11-23T22:00:00+08:00');
-    // Convert to local time format for datetime-local input
     const localDate = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000));
     endInput.value = localDate.toISOString().slice(0, 16);
   }
 }
 
+function openEditAuctionModal() {
+  if (!currentUser?.isAdmin || !activeDetailId) return;
+  const item = auctions.find(a => a.id === activeDetailId);
+  if (!item) return;
+
+  editingAuctionId = item.id;
+  document.getElementById('detailModal')?.classList.add('hidden');
+  if (detailInterval) clearInterval(detailInterval);
+
+  const modal = document.getElementById('uploadModal');
+  if (modal) modal.classList.remove('hidden');
+
+  const titleEl = document.getElementById('uploadModalTitle');
+  if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square text-blue-600 mr-2"></i>編輯拍賣品資料';
+  const quickBtn = document.getElementById('quickPublishBtn');
+  if (quickBtn) quickBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1.5"></i> 儲存修改';
+  const pubBtn = document.getElementById('publishBtn');
+  if (pubBtn) pubBtn.textContent = '儲存修改';
+
+  document.getElementById('itemTitle').value = item.title || '';
+  document.getElementById('itemSubCategory').value = item.subCategory || '';
+  document.getElementById('startPrice').value = item.startPrice;
+  document.getElementById('bidIncrement').value = item.bidIncrement;
+  document.getElementById('itemDesc').value = item.desc || '';
+  const pinChk = document.getElementById('itemIsPinned');
+  if (pinChk) pinChk.checked = Boolean(item.isPinned);
+
+  // Category
+  if (typeof isCustomCategoryMode !== 'undefined' && isCustomCategoryMode) {
+    toggleNewCategoryInput();
+  }
+  const catSelect = document.getElementById('itemCategorySelect');
+  if (catSelect) {
+    const hasOption = Array.from(catSelect.options).some(o => o.value === item.category);
+    if (hasOption) {
+      catSelect.value = item.category;
+    } else if (item.category) {
+      const opt = document.createElement('option');
+      opt.value = item.category;
+      opt.textContent = item.category;
+      catSelect.appendChild(opt);
+      catSelect.value = item.category;
+    }
+  }
+
+  // End Time
+  const endInput = document.getElementById('endTime');
+  if (endInput && item.endTime) {
+    const d = new Date(item.endTime);
+    const localDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+    endInput.value = localDate.toISOString().slice(0, 16);
+  }
+
+  // Method & Location (stored as "面交 · 葵興地鐵站")
+  const parts = (item.location || '').split(' · ');
+  const methodSelect = document.getElementById('itemMethod');
+  const locSelect = document.getElementById('itemLocation');
+  if (parts.length >= 2) {
+    if (methodSelect && Array.from(methodSelect.options).some(o => o.value === parts[0])) methodSelect.value = parts[0];
+    if (locSelect && Array.from(locSelect.options).some(o => o.value === parts[1])) locSelect.value = parts[1];
+  }
+
+  // Images
+  tempImagesBase64 = Array.isArray(item.images) ? [...item.images] : [];
+  renderUploadImagePreviews();
+}
+
 function closeUploadModal() {
+  editingAuctionId = null;
   document.getElementById('uploadModal').classList.add('hidden');
   document.getElementById('uploadForm').reset();
   tempImagesBase64 = [];
-  document.getElementById('uploadPlaceholder').classList.remove('hidden');
-  document.getElementById('imagePreviewContainer').classList.add('hidden');
-  document.getElementById('imagePreviewContainer').innerHTML = '';
+  renderUploadImagePreviews();
 }
 
 function applyWatermarkToCanvas(ctx, width, height, text) {
@@ -1105,3 +1206,226 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, { passive: true });
 });
+
+// ==================== [管理員進階工具：刪除、批次開標、結算總覽、黑名單管理] ====================
+async function deleteActiveAuction() {
+  if (!currentUser?.isAdmin || !activeDetailId) return;
+  const item = auctions.find(a => a.id === activeDetailId);
+  if (!item) return;
+
+  const extraWarn = item.bids.length > 0 ? `\n⚠️ 注意：此商品已有 ${item.bids.length} 筆出價紀錄，刪除後將一併移除且無法復原！` : '\n刪除後將無法復原！';
+  if (!confirm(`確定要永久刪除【${item.title}】嗎？${extraWarn}`)) return;
+
+  if (item.bids.length > 0) {
+    const { error: bidsDelErr } = await sb.from('bids').delete().eq('auction_id', activeDetailId);
+    if (bidsDelErr) {
+      return alert('刪除出價紀錄失敗（請確認已在 Supabase 執行管理員刪除權限 SQL）：' + bidsDelErr.message);
+    }
+  }
+
+  const { error } = await sb.from('auctions').delete().eq('id', activeDetailId);
+  if (error) {
+    alert('刪除商品失敗：' + error.message);
+  } else {
+    alert('🗑️ 已永久刪除拍賣品！');
+    closeDetailModal();
+    await fetchAuctions();
+  }
+}
+
+async function bulkSetBiddable(isBiddable) {
+  if (!currentUser?.isAdmin || !sb) return;
+  const actionLabel = isBiddable ? '全部開放出價（正式開標）' : '全部鎖定出價（預熱展示中）';
+  if (!confirm(`確定要將所有「顯示中」的拍賣品一次過${actionLabel}嗎？`)) return;
+
+  const { error } = await sb.from('auctions').update({ is_biddable: isBiddable }).eq('is_visible', true);
+  if (error) {
+    alert('批次更新失敗：' + error.message);
+  } else {
+    alert(`✅ 已成功將所有顯示中的拍賣品${actionLabel}！`);
+    await fetchAuctions();
+  }
+}
+
+let currentSettlementTab = 'ended';
+let adminProfilesMap = {};
+
+async function openSettlementModal() {
+  if (!currentUser?.isAdmin || !sb) return;
+  document.getElementById('settlementModal')?.classList.remove('hidden');
+  const content = document.getElementById('settlementContent');
+  if (content) content.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin mr-1"></i>正在載入買家電話與結算資料...</div>';
+
+  await fetchAuctions();
+  const { data: profilesData, error } = await sb.from('profiles').select('id, nickname, phone, is_blacklisted, is_admin');
+  adminProfilesMap = {};
+  if (!error && profilesData) {
+    profilesData.forEach(p => { adminProfilesMap[p.id] = p; });
+  }
+  switchSettlementTab(currentSettlementTab);
+}
+
+function closeSettlementModal() {
+  document.getElementById('settlementModal')?.classList.add('hidden');
+}
+
+function switchSettlementTab(tab) {
+  currentSettlementTab = tab;
+  const activeCls = 'px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-sm transition';
+  const inactiveCls = 'px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+  document.getElementById('settleTabEnded').className = tab === 'ended' ? activeCls : inactiveCls;
+  document.getElementById('settleTabAll').className = tab === 'all' ? activeCls : inactiveCls;
+  document.getElementById('settleTabBlacklist').className = tab === 'blacklist' ? activeCls : inactiveCls;
+  renderSettlementContent();
+}
+
+function buildWhatsAppUrl(phone, text) {
+  const clean = String(phone || '').replace(/[^0-9]/g, '');
+  if (!clean) return '';
+  const fullPhone = clean.length === 8 ? '852' + clean : clean;
+  return `https://wa.me/${fullPhone}?text=${encodeURIComponent(text)}`;
+}
+
+function renderSettlementContent() {
+  const container = document.getElementById('settlementContent');
+  const summaryEl = document.getElementById('settlementSummaryText');
+  if (!container) return;
+
+  if (currentSettlementTab === 'blacklist') {
+    const blacklistedUsers = Object.values(adminProfilesMap).filter(p => p.is_blacklisted);
+    if (summaryEl) summaryEl.textContent = `目前共有 ${blacklistedUsers.length} 位黑名單用戶`;
+    if (blacklistedUsers.length === 0) {
+      container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs">目前沒有任何黑名單用戶 🎉</div>';
+      return;
+    }
+    container.innerHTML = blacklistedUsers.map(u => `
+      <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div>
+          <div class="font-bold text-slate-900">${u.nickname || '未命名用戶'}</div>
+          <div class="text-slate-500 mt-0.5">電話：${u.phone ? '+852 ' + u.phone : '未綁定'} ｜ <span class="font-mono text-[10px]">${u.id}</span></div>
+        </div>
+        <button onclick="adminUnblacklistUser('${u.id}', '${String(u.nickname || '').replace(/'/g, "\'")}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition">
+          <i class="fa-solid fa-rotate-left mr-1"></i>解除黑名單
+        </button>
+      </div>
+    `).join('');
+    return;
+  }
+
+  const now = new Date();
+  const targetItems = auctions.filter(item => {
+    if (!item.bids || item.bids.length === 0) return false;
+    if (currentSettlementTab === 'ended') return now > new Date(item.endTime);
+    return true;
+  });
+
+  const totalAmount = targetItems.reduce((sum, item) => sum + (item.currentPrice || 0), 0);
+  if (summaryEl) {
+    summaryEl.textContent = currentSettlementTab === 'ended'
+      ? `已截標成交 ${targetItems.length} 件 ｜ 總成交額 HK$${totalAmount.toLocaleString()}`
+      : `全部有出價共 ${targetItems.length} 件 ｜ 目前總出價額 HK$${totalAmount.toLocaleString()}`;
+  }
+
+  if (targetItems.length === 0) {
+    container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs">暫時沒有符合條件的拍賣紀錄</div>';
+    return;
+  }
+
+  container.innerHTML = targetItems.map(item => {
+    const isEnded = now > new Date(item.endTime);
+    const img = item.images[0] || './logo.png';
+
+    // 找出不重複買家的最高出價排名 (第一高價、第二高價候補)
+    const uniqueBidders = [];
+    const seen = new Set();
+    for (let i = item.bids.length - 1; i >= 0; i--) {
+      const b = item.bids[i];
+      if (!seen.has(b.bidderId)) {
+        seen.add(b.bidderId);
+        uniqueBidders.push(b);
+      }
+      if (uniqueBidders.length >= 2) break;
+    }
+
+    const winner = uniqueBidders[0];
+    const runnerUp = uniqueBidders[1] || null;
+
+    const wProfile = adminProfilesMap[winner.bidderId] || {};
+    const wPhone = wProfile.phone || '';
+    const wMsg = `你好！恭喜你喺「一間小店」成功得標【${item.title}】（結標價 $${winner.amount}，${item.location}），請問幾時方便交收？`;
+    const wWaUrl = buildWhatsAppUrl(wPhone, wMsg);
+
+    let runnerUpHtml = '<div class="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-100">🥈 第二高價候補：暫無其他出價者</div>';
+    if (runnerUp) {
+      const rProfile = adminProfilesMap[runnerUp.bidderId] || {};
+      const rPhone = rProfile.phone || '';
+      const rMsg = `你好！關於「一間小店」拍賣品【${item.title}】，由於原得標者未能完成交收，你係第二高價出價者（當時出價 $${runnerUp.amount}），想問你有冇興趣以雙方議定價優先候補購買？`;
+      const rWaUrl = buildWhatsAppUrl(rPhone, rMsg);
+      runnerUpHtml = `
+        <div class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div>
+            <span class="font-bold text-slate-700">🥈 候補：${runnerUp.bidderName}</span>
+            <span class="text-amber-600 font-bold ml-1">($${runnerUp.amount})</span>
+            <span class="text-slate-500 ml-1">${rPhone ? '📞 ' + rPhone : '未綁電話'}</span>
+            ${rProfile.is_blacklisted ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">黑名單</span>' : ''}
+          </div>
+          <div class="flex items-center gap-1.5">
+            ${rWaUrl ? `<a href="${rWaUrl}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-md font-bold transition"><i class="fa-brands fa-whatsapp mr-1"></i>WhatsApp 候補</a>` : ''}
+            <button onclick="adminBlacklistUserFromSettle('${runnerUp.bidderId}', '${String(runnerUp.bidderName || '').replace(/'/g, "\'")}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-2 py-1 rounded-md font-bold transition"><i class="fa-solid fa-ban"></i></button>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm">
+        <div class="flex items-start gap-3">
+          <img src="${img}" onerror="this.src='./logo.png'" onclick="closeSettlementModal(); openDetailModal('${item.id}')" class="w-16 h-16 rounded-lg object-contain bg-slate-100 shrink-0 cursor-pointer border border-slate-100">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isEnded ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'}">${isEnded ? '已截標' : '競標中'}</span>
+                <h4 onclick="closeSettlementModal(); openDetailModal('${item.id}')" class="font-bold text-slate-900 text-sm truncate cursor-pointer hover:text-amber-600">${item.title}</h4>
+              </div>
+              <span class="text-base font-extrabold text-amber-600 shrink-0">$${winner.amount} <span class="text-[10px] text-slate-400 font-normal">(${item.bids.length}口)</span></span>
+            </div>
+
+            <div class="mt-2 bg-emerald-50/70 border border-emerald-100 rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div>
+                <span class="font-bold text-emerald-900">🏆 ${isEnded ? '得標者' : '目前領先'}：${winner.bidderName}</span>
+                <span class="text-slate-600 ml-2 font-mono">${wPhone ? '📞 ' + wPhone : '⚠️ 未綁電話'}</span>
+                ${wProfile.is_blacklisted ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-rose-600 text-white font-bold text-[10px]">黑名單</span>' : ''}
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${wWaUrl ? `<a href="${wWaUrl}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold text-[11px] shadow-sm transition"><i class="fa-brands fa-whatsapp mr-1"></i>WhatsApp 聯絡</a>` : ''}
+                <button onclick="notifyWinner('${item.id}', '${winner.bidderId}', '${String(winner.bidderName || '').replace(/'/g, "\'")}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1 rounded-lg font-bold text-[11px] shadow-sm transition"><i class="fa-solid fa-bell mr-1"></i>站內通知</button>
+                <button onclick="adminBlacklistUserFromSettle('${winner.bidderId}', '${String(winner.bidderName || '').replace(/'/g, "\'")}')" title="棄標列入黑名單" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded-lg font-bold text-[11px] shadow-sm transition"><i class="fa-solid fa-ban mr-1"></i>黑名單</button>
+              </div>
+            </div>
+
+            ${runnerUpHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function adminBlacklistUserFromSettle(userId, userName) {
+  await adminBlacklistUser(userId, userName);
+  if (adminProfilesMap[userId]) adminProfilesMap[userId].is_blacklisted = true;
+  renderSettlementContent();
+}
+
+async function adminUnblacklistUser(userId, userName) {
+  if (!currentUser?.isAdmin || !userId) return;
+  if (!confirm(`確定要解除【${userName}】的黑名單限制嗎？`)) return;
+  const { error } = await sb.from('profiles').update({ is_blacklisted: false }).eq('id', userId);
+  if (error) {
+    alert('解除黑名單失敗：' + error.message);
+  } else {
+    alert(`✅ 已解除【${userName}】的黑名單限制！`);
+    if (adminProfilesMap[userId]) adminProfilesMap[userId].is_blacklisted = false;
+    renderSettlementContent();
+  }
+}
