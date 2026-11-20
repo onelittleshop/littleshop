@@ -359,7 +359,7 @@ function renderDetailImages(images) {
     return;
   }
 
-  container.innerHTML = images.map(src => `<div class="w-full h-full shrink-0 snap-center"><img src="${src}" onerror="this.src='./logo.png'" class="w-full h-full object-cover"></div>`).join('');
+  container.innerHTML = images.map(src => `<div class="w-full h-full shrink-0 snap-center flex items-center justify-center bg-slate-100"><img src="${src}" onerror="this.src='./logo.png'" class="w-full h-full object-contain"></div>`).join('');
   
   if (images.length > 1) {
     indicator.classList.remove('hidden');

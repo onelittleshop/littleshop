@@ -234,7 +234,7 @@ function renderAuctions() {
       return `
         <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border ${cardBorder} overflow-hidden cursor-pointer hover:shadow-md transition group flex flex-col justify-between">
           <div class="relative aspect-square bg-slate-100 overflow-hidden">
-            <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+            <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-contain p-1 group-hover:scale-105 transition duration-300">
             ${statusBadge}
             ${myBidStatus}
             ${pinBadge}
@@ -282,7 +282,7 @@ function renderAuctions() {
       return `
         <div onclick="openDetailModal('${item.id}')" class="rounded-2xl shadow-sm border ${listBorder} p-3 sm:p-4 cursor-pointer hover:shadow-md transition flex items-center space-x-4">
           <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
-            <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-cover">
+            <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-contain p-0.5">
             ${myBidStatus}
           </div>
           <div class="flex-1 min-w-0">
