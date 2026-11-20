@@ -92,8 +92,8 @@ function openUploadModal() {
   
   const endInput = document.getElementById('endTime');
   if (endInput) {
-    // 預設 2026年11月22日 22:00 HKT
-    const targetDate = new Date('2026-11-22T22:00:00+08:00');
+    // 預設 2026年11月23日 22:00 HKT
+    const targetDate = new Date('2026-11-23T22:00:00+08:00');
     // Convert to local time format for datetime-local input
     const localDate = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000));
     endInput.value = localDate.toISOString().slice(0, 16);
@@ -109,12 +109,66 @@ function closeUploadModal() {
   document.getElementById('imagePreviewContainer').innerHTML = '';
 }
 
+function applyWatermarkToCanvas(ctx, width, height, text) {
+  if (!text) return;
+  ctx.save();
+
+  // 1. 中央微淡斜向防盜水印 (不遮擋貨品細節，但防止截圖裁走角落)
+  const centerFontSize = Math.max(18, Math.round(Math.min(width, height) * 0.055));
+  ctx.font = `700 ${centerFontSize}px "Microsoft JhengHei", "PingFang HK", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate(-Math.PI / 6);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+  ctx.shadowBlur = 4;
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+
+  // 2. 右下角清晰半透明標籤水印 (方便辨識店舖與 IG 導流)
+  ctx.save();
+  const cornerFontSize = Math.max(12, Math.round(Math.min(width, height) * 0.028));
+  ctx.font = `700 ${cornerFontSize}px "Microsoft JhengHei", "PingFang HK", sans-serif`;
+  const textMetrics = ctx.measureText(text);
+  const padX = Math.round(cornerFontSize * 0.65);
+  const padY = Math.round(cornerFontSize * 0.4);
+  const boxW = textMetrics.width + padX * 2;
+  const boxH = cornerFontSize + padY * 2;
+  const margin = Math.round(Math.min(width, height) * 0.025);
+  const boxX = width - boxW - margin;
+  const boxY = height - boxH - margin;
+
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+  const r = Math.min(8, boxH / 2);
+  ctx.beginPath();
+  ctx.moveTo(boxX + r, boxY);
+  ctx.lineTo(boxX + boxW - r, boxY);
+  ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+  ctx.lineTo(boxX + boxW, boxY + boxH - r);
+  ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+  ctx.lineTo(boxX + r, boxY + boxH);
+  ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+  ctx.lineTo(boxX, boxY + r);
+  ctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, boxX + boxW / 2, boxY + boxH / 2 + 0.5);
+  ctx.restore();
+}
+
 function previewSelectedImages(event) {
   const files = event.target.files;
   if (!files || files.length === 0) return;
   
   const container = document.getElementById('imagePreviewContainer');
   const placeholder = document.getElementById('uploadPlaceholder');
+  const enableWm = document.getElementById('enableWatermark')?.checked ?? true;
+  const wmText = (document.getElementById('watermarkText')?.value || '一間小店 | IG: one_little_shop').trim();
 
   Array.from(files).forEach(file => {
     const reader = new FileReader();
@@ -129,7 +183,12 @@ function previewSelectedImages(event) {
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        if (enableWm && wmText) {
+          applyWatermarkToCanvas(ctx, width, height, wmText);
+        }
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
         
         if (tempImagesBase64.length < 5) {
           tempImagesBase64.push(dataUrl);
@@ -147,6 +206,7 @@ function previewSelectedImages(event) {
     };
     reader.readAsDataURL(file);
   });
+  event.target.value = '';
 }
 
 function removeTempImage(idx) {
@@ -205,6 +265,12 @@ async function openDetailModal(id) {
     adminGroup.classList.remove('hidden');
     document.getElementById('adminItemViewBadge').innerHTML = `<i class="fa-regular fa-eye mr-1"></i>瀏覽: ${item.viewCount || 0} 次`;
     
+    const pinBtn = document.getElementById('adminPinBtn');
+    if (pinBtn) {
+      pinBtn.innerHTML = item.isPinned ? '<i class="fa-solid fa-thumbtack mr-1"></i>取消置頂' : '<i class="fa-solid fa-thumbtack mr-1"></i>設為置頂';
+      pinBtn.className = item.isPinned ? 'bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
+    }
+
     const visBtn = document.getElementById('adminVisibilityBtn');
     visBtn.textContent = !item.isVisible ? '解除隱藏' : '隱藏商品';
     visBtn.className = !item.isVisible ? 'bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md' : 'bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md';
@@ -353,6 +419,17 @@ function closeDetailModal() {
   const url = new URL(window.location);
   url.searchParams.delete('item');
   window.history.pushState({}, '', url);
+}
+
+async function toggleAuctionPinned() {
+  if (!currentUser?.isAdmin || !activeDetailId) return;
+  const item = auctions.find(a => a.id === activeDetailId);
+  if (!item) return;
+  const newPinned = !item.isPinned;
+  const { error } = await sb.from('auctions').update({ is_pinned: newPinned }).eq('id', activeDetailId);
+  if (error) return alert('更新置頂狀態失敗（請確認已在 Supabase 新增 is_pinned 欄位）：' + error.message);
+  await fetchAuctions();
+  openDetailModal(activeDetailId);
 }
 
 async function toggleAuctionVisibility() {

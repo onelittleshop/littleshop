@@ -65,6 +65,7 @@ async function fetchAuctions() {
         isVisible: isVisible,
         status: isVisible ? 'active' : 'hidden',
         isBiddable: item.is_biddable ?? true,
+        isPinned: Boolean(item.is_pinned),
         viewCount: Number(item.view_count ?? 0),
         createdAt: item.created_at
       };
@@ -192,6 +193,7 @@ function renderAuctions() {
   });
 
   list.sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
     if (sortType === 'latest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     if (sortType === 'ending_soon') return new Date(a.endTime) - new Date(b.endTime);
     if (sortType === 'price_asc') return a.currentPrice - b.currentPrice;
@@ -227,12 +229,15 @@ function renderAuctions() {
               myBidStatus = `<span class="absolute top-2 right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">已落後</span>`;
           }
       }
+      const pinBadge = item.isPinned ? `<span class="absolute bottom-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10"><i class="fa-solid fa-fire mr-1"></i>矚目精選</span>` : '';
+      const cardBorder = item.isPinned ? 'border-amber-300 ring-1 ring-amber-200/80' : 'border-slate-100';
       return `
-        <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden cursor-pointer hover:shadow-md transition group flex flex-col justify-between">
+        <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border ${cardBorder} overflow-hidden cursor-pointer hover:shadow-md transition group flex flex-col justify-between">
           <div class="relative aspect-square bg-slate-100 overflow-hidden">
             <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
             ${statusBadge}
             ${myBidStatus}
+            ${pinBadge}
           </div>
           <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between">
             <div>
@@ -272,14 +277,17 @@ function renderAuctions() {
               myBidStatus = `<span class="absolute top-1 right-1 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm z-10">落後</span>`;
           }
       }
+      const listBorder = item.isPinned ? 'border-amber-300 ring-1 ring-amber-200/80 bg-amber-50/20' : 'border-slate-100 bg-white';
+      const listPinBadge = item.isPinned ? `<span class="text-[10px] font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-1.5 py-0.5 rounded"><i class="fa-solid fa-fire mr-0.5"></i>矚目</span>` : '';
       return `
-        <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-3 sm:p-4 cursor-pointer hover:shadow-md transition flex items-center space-x-4">
+        <div onclick="openDetailModal('${item.id}')" class="rounded-2xl shadow-sm border ${listBorder} p-3 sm:p-4 cursor-pointer hover:shadow-md transition flex items-center space-x-4">
           <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
             <img src="${img}" onerror="this.src='./logo.png'" class="w-full h-full object-cover">
             ${myBidStatus}
           </div>
           <div class="flex-1 min-w-0">
-            <div class="flex items-center space-x-2 mb-1">
+            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+              ${listPinBadge}
               <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
               <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
               <span class="text-[10px] ${!item.isVisible ? 'text-slate-500' : isEnded ? 'text-rose-500' : !item.isBiddable ? 'text-slate-600' : 'text-emerald-600'} font-bold">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : !item.isBiddable ? '即將開標' : '競標中')}</span>
@@ -353,6 +361,7 @@ async function handleCreateAuction(e) {
     image_url: JSON.stringify(tempImagesBase64),
     is_visible: true,
     is_biddable: false, // 預設不能下標 (鎖定狀態)
+    is_pinned: document.getElementById('itemIsPinned')?.checked || false,
     seller_id: currentUser.id,
     seller_name: currentUser.nickname
   };

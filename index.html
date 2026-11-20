@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795142505">
+  <link rel="stylesheet" href="./css/style.css?v=1795146368">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -85,7 +85,7 @@
         <i class="fa-solid fa-bullhorn text-amber-500 mr-2 shrink-0"></i>
         <div class="marquee-container">
           <div class="marquee-text font-medium tracking-wide">
-            🎉 公測預熱中！11月22日 22:00 截標｜最後 1 分鐘出價自動延長 5 分鐘｜追蹤 <a href="https://www.instagram.com/one_little_shop" target="_blank" class="text-rose-500 font-bold hover:text-rose-600 underline mx-1">IG</a> 接收開標通知 ✨
+            🎉 公測預熱中！11月23日 22:00 截標｜最後 1 分鐘出價自動延長 5 分鐘｜追蹤 <a href="https://www.instagram.com/one_little_shop" target="_blank" class="text-rose-500 font-bold hover:text-rose-600 underline mx-1">IG</a> 接收開標通知 ✨
           </div>
         </div>
       </div>
@@ -405,6 +405,13 @@
           </div>
           <input type="file" id="imageFileInput" accept="image/*" multiple class="hidden" onchange="previewSelectedImages(event)">
           <input type="file" id="cameraFileInput" accept="image/*" capture="environment" multiple class="hidden" onchange="previewSelectedImages(event)">
+          <div class="mt-2 flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+            <label class="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 shrink-0 cursor-pointer">
+              <input type="checkbox" id="enableWatermark" checked class="accent-amber-500 w-3.5 h-3.5">
+              <span>自動加水印</span>
+            </label>
+            <input type="text" id="watermarkText" value="一間小店 | IG: one_little_shop" class="flex-1 px-2 py-1 text-xs border border-slate-200 rounded bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500" placeholder="輸入水印文字...">
+          </div>
         </div>
 
         <div>
@@ -473,6 +480,13 @@
           <input type="text" id="itemDesc" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" placeholder="例如：95new、無明顯瑕疵...">
         </div>
 
+        <div class="bg-amber-50/70 px-3 py-2.5 rounded-xl border border-amber-200/80 flex items-center justify-between">
+          <label class="flex items-center space-x-2 text-xs font-bold text-amber-900 cursor-pointer">
+            <input type="checkbox" id="itemIsPinned" class="accent-amber-500 w-4 h-4 rounded">
+            <span><i class="fa-solid fa-thumbtack text-amber-600 mr-1"></i>設為「精選置頂」貨品（永遠顯示在最頂部）</span>
+          </label>
+        </div>
+
         <div class="pt-2 flex justify-end space-x-3 border-t border-slate-100">
           <button type="button" onclick="closeUploadModal()" class="px-4 py-2 rounded-lg text-sm text-slate-600">取消</button>
           <button type="submit" id="publishBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg text-sm font-bold">發布競標</button>
@@ -488,6 +502,7 @@
       <div class="md:col-span-6 bg-slate-100 flex flex-col justify-between relative group">
         <div id="adminActionGroup" class="hidden absolute top-3 right-3 z-30 flex flex-col gap-1.5 items-end">
           <div id="adminItemViewBadge" class="bg-slate-800/80 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md mb-1"><i class="fa-regular fa-eye mr-1"></i>載入中...</div>
+          <button id="adminPinBtn" onclick="toggleAuctionPinned()"></button>
           <button id="adminVisibilityBtn" onclick="toggleAuctionVisibility()"></button>
           <button id="adminBiddableBtn" onclick="toggleAuctionBiddable()"></button>
         </div>
@@ -585,10 +600,10 @@
     </div>
   </div>
 
-  <script src="./js/config.js?v=1795142505"></script>
-  <script src="./js/analytics.js?v=1795142505"></script>
-  <script src="./js/auth.js?v=1795142505"></script>
-  <script src="./js/auctions.js?v=1795142505"></script>
-  <script src="./js/ui.js?v=1795142505"></script>
+  <script src="./js/config.js?v=1795146368"></script>
+  <script src="./js/analytics.js?v=1795146368"></script>
+  <script src="./js/auth.js?v=1795146368"></script>
+  <script src="./js/auctions.js?v=1795146368"></script>
+  <script src="./js/ui.js?v=1795146368"></script>
 </body>
 </html>
