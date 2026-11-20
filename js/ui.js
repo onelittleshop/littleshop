@@ -467,12 +467,18 @@ async function openDetailModal(id) {
   } else if (isEnded) {
     actionArea.innerHTML = `<div class="text-center py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-sm">本場拍賣已結標</div>`;
   } else if (!item.isBiddable) {
+    const safeItemTitle = String(item.title || '').replace(/'/g, "\'");
     actionArea.innerHTML = `
-      <div class="text-center py-3 px-3 bg-indigo-50 text-indigo-900 border border-indigo-100 rounded-xl space-y-2">
-        <div class="font-bold text-xs sm:text-sm">✨ 預熱展示中，即將開放出價</div>
-        <a href="https://www.instagram.com/one_little_shop" target="_blank" class="inline-flex items-center justify-center bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:opacity-95 transition">
-          <i class="fa-brands fa-instagram mr-1.5 text-sm"></i>追蹤 IG 接收開標通知
-        </a>
+      <div class="text-center py-3.5 px-3 bg-indigo-50 text-indigo-900 border border-indigo-100 rounded-xl space-y-2.5">
+        <div class="font-bold text-xs sm:text-sm">✨ 預熱展示中｜11月21日 (六) 12:00 正式開標</div>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button type="button" onclick="addOpenBidCalendarReminder('${safeItemTitle}')" class="inline-flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-sm transition">
+            <i class="fa-regular fa-calendar-plus mr-1.5 text-amber-400"></i>加入開標日曆提醒
+          </button>
+          <a href="https://www.instagram.com/one_little_shop" target="_blank" class="inline-flex items-center justify-center bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-sm hover:opacity-95 transition">
+            <i class="fa-brands fa-instagram mr-1.5 text-sm"></i>追蹤 IG 通知
+          </a>
+        </div>
       </div>`;
   } else {
     const nextMin = item.bids.length === 0 ? item.startPrice : (item.currentPrice + item.bidIncrement);
@@ -1493,3 +1499,65 @@ async function adminUnblacklistUser(userId, userName) {
     renderSettlementContent();
   }
 }
+
+// ==================== [一鍵加入開標日曆提醒 (支援 iPhone .ics 與 Google 日曆)] ====================
+const OPEN_BID_TIME_HKT = new Date('2026-11-21T12:00:00+08:00');
+
+function addOpenBidCalendarReminder(itemTitle = '') {
+  const title = itemTitle
+    ? `🔥 一間小店開標提醒：${itemTitle}`
+    : '🔥 一間小店 正式開標！$0起拍搶標';
+  const shopUrl = 'https://onelittleshop.github.io/littleshop/?from=calendar';
+  const details = `一間小店限時拍賣正式開標！0% 買家手續費，多款精選 $0 無底價起拍！\n立即入場搶頭香：${shopUrl}`;
+
+  // 2026-11-21 12:00 - 12:30 HKT => 20261121T040000Z - 20261121T043000Z
+  const startUtc = '20261121T040000Z';
+  const endUtc = '20261121T043000Z';
+
+  const isApple = /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) && !/Chrome|Android/i.test(navigator.userAgent);
+
+  if (isApple) {
+    const icsLines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//One Little Shop//Auction Reminder//ZH',
+      'BEGIN:VEVENT',
+      `DTSTART:${startUtc}`,
+      `DTEND:${endUtc}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${details.replace(/\n/g, '\\n')}`,
+      `LOCATION:${shopUrl}`,
+      `URL:${shopUrl}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT5M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:一間小店仲有 5 分鐘就開標啦！',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsLines], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'one_little_shop_open_bid.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('📅 已產生日曆提醒檔，請按「加入」即可於開標前 5 分鐘響鈴提示！', 'success', 4000);
+  } else {
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startUtc}/${endUtc}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(shopUrl)}`;
+    window.open(gcalUrl, '_blank');
+    showToast('📅 已為您開啟 Google 日曆，按「儲存」即可設定開標提醒！', 'success', 3500);
+  }
+}
+
+// 控制主頁置頂區「開標提醒」按鈕：開標前顯示，開標後自動隱藏
+document.addEventListener('DOMContentLoaded', () => {
+  const calBtn = document.getElementById('pinnedCalendarBtn');
+  if (calBtn && new Date() < OPEN_BID_TIME_HKT) {
+    calBtn.classList.remove('hidden');
+  }
+});

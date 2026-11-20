@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795164920">
+  <link rel="stylesheet" href="./css/style.css?v=1795168025">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -49,8 +49,8 @@
         </div>
 
         <div id="userAuthView" class="hidden flex items-center space-x-2.5">
-          <button onclick="openMessagesModal()" class="relative p-2 text-slate-600 hover:text-amber-600 hover:bg-slate-100 rounded-full transition">
-            <i class="fa-regular fa-bell text-lg"></i>
+          <button onclick="openMessagesModal()" title="站內聊天室" class="relative p-2 text-slate-600 hover:text-amber-600 hover:bg-slate-100 rounded-full transition">
+            <i class="fa-regular fa-comment-dots text-lg"></i>
             <span id="unreadMsgBadge" class="hidden absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
           </button>
 
@@ -203,7 +203,12 @@
             💥 0元無底價起拍
           </span>
         </div>
-        <span class="text-[11px] font-bold text-amber-800/80">全場焦點・限時搶標</span>
+        <div class="flex items-center gap-2">
+          <button id="pinnedCalendarBtn" type="button" onclick="addOpenBidCalendarReminder()" class="hidden inline-flex items-center bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition">
+            <i class="fa-regular fa-calendar-plus text-rose-500 mr-1"></i>11/21 12:00 開標提醒
+          </button>
+          <span class="text-[11px] font-bold text-amber-800/80">全場焦點・限時搶標</span>
+        </div>
       </div>
       <div id="pinnedGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"></div>
     </section>
@@ -661,7 +666,7 @@
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
           <h4 class="font-bold text-slate-800 mb-1"><i class="fa-solid fa-truck-fast mr-1"></i>交收與付款方式</h4>
-          <p>得標後官方會透過站內訊息（右上角鈴鐺）或 WhatsApp 聯絡確認。支援<strong>葵興 / 葵芳 / 荃灣地鐵站面交</strong>（現金 / PayMe / FPS）或<strong>順豐到付</strong>。</p>
+          <p>得標後官方會透過站內訊息（右上角聊天圖示）或 WhatsApp 聯絡確認。支援<strong>葵興 / 葵芳 / 荃灣地鐵站面交</strong>（現金 / PayMe / FPS）或<strong>順豐到付</strong>。</p>
         </div>
         <div class="bg-rose-50/70 p-3 rounded-xl border border-rose-100">
           <h4 class="font-bold text-rose-900 mb-1"><i class="fa-solid fa-ban mr-1"></i>棄標罰則與候補機制</h4>
@@ -728,10 +733,10 @@
   <!-- ==================== [全域輕提示 Toast] ==================== -->
   <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[70] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-sm"></div>
 
-  <script src="./js/config.js?v=1795164920"></script>
-  <script src="./js/analytics.js?v=1795164920"></script>
-  <script src="./js/auth.js?v=1795164920"></script>
-  <script src="./js/auctions.js?v=1795164920"></script>
-  <script src="./js/ui.js?v=1795164920"></script>
+  <script src="./js/config.js?v=1795168025"></script>
+  <script src="./js/analytics.js?v=1795168025"></script>
+  <script src="./js/auth.js?v=1795168025"></script>
+  <script src="./js/auctions.js?v=1795168025"></script>
+  <script src="./js/ui.js?v=1795168025"></script>
 </body>
 </html>
