@@ -303,6 +303,8 @@ async function openDetailModal(id) {
   const actionArea = document.getElementById('bidActionArea');
   if (!currentUser) {
     actionArea.innerHTML = `<button onclick="closeDetailModal(); openLoginModal();" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition">登入參與競標</button>`;
+  } else if (currentUser.isBlacklisted) {
+    actionArea.innerHTML = `<div class="text-center py-3 px-3 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs sm:text-sm">🚫 您的帳號已被列入黑名單，暫時無法參與競標（如有疑問請 IG 聯絡管理員）</div>`;
   } else if (isEnded) {
     actionArea.innerHTML = `<div class="text-center py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-sm">本場拍賣已結標</div>`;
   } else if (!item.isBiddable) {
@@ -329,11 +331,12 @@ async function openDetailModal(id) {
   historyList.innerHTML = item.bids.length === 0 ? '<div class="text-slate-400 text-center py-4 text-xs">暫無出價紀錄</div>' :
     item.bids.slice().reverse().map((b, i) => `
       <div class="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-        <div class="flex items-center space-x-2">
-          <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] flex items-center justify-center">${item.bids.length - i}</span>
-          <span class="font-bold text-slate-800 text-xs">${b.bidderName}</span>
+        <div class="flex items-center space-x-2 min-w-0">
+          <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] flex items-center justify-center shrink-0">${item.bids.length - i}</span>
+          <span class="font-bold text-slate-800 text-xs truncate">${b.bidderName}</span>
+          ${currentUser?.isAdmin ? `<button onclick="adminBlacklistUser('${b.bidderId}', '${String(b.bidderName || '').replace(/'/g, "\'")}')" title="列入黑名單" class="text-[10px] text-rose-500 hover:bg-rose-100 px-1.5 py-0.5 rounded transition shrink-0"><i class="fa-solid fa-ban"></i></button>` : ''}
         </div>
-        <div class="text-right">
+        <div class="text-right shrink-0 ml-2">
           <span class="font-extrabold text-amber-600 text-xs">$${b.amount}</span>
           <span class="text-[10px] text-slate-400 block">${new Date(b.time).toLocaleString()}</span>
         </div>
@@ -1010,5 +1013,16 @@ function refreshActiveDetailSilently(id) {
   if (bidInput && Number(bidInput.value) < nextMin) {
     bidInput.min = nextMin;
     bidInput.value = nextMin;
+  }
+}
+
+async function adminBlacklistUser(userId, userName) {
+  if (!currentUser?.isAdmin || !userId) return;
+  if (!confirm(`確定要將【${userName}】列入黑名單嗎？\n\n列入後該用戶將無法在網站出價。`)) return;
+  const { error } = await sb.from('profiles').update({ is_blacklisted: true }).eq('id', userId);
+  if (error) {
+    alert('加入黑名單失敗（請確認已在 Supabase 執行黑名單 SQL）：' + error.message);
+  } else {
+    alert(`🚫 已將【${userName}】列入黑名單！`);
   }
 }

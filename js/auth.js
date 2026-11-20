@@ -51,12 +51,13 @@ async function loadUserProfile(userId) {
       nickname: dbNickname,
       phone: data?.phone || '',
       avatar_url: data?.avatar_url || '',
-      isAdmin: Boolean(data?.is_admin)
+      isAdmin: Boolean(data?.is_admin),
+      isBlacklisted: Boolean(data?.is_blacklisted)
     };
     
   } catch (err) {
     console.warn('載入 Profile 發生異常:', err);
-    currentUser = { id: uid, nickname: getMaskedName(email), phone: '', avatar_url: '', isAdmin: false };
+    currentUser = { id: uid, nickname: getMaskedName(email), phone: '', avatar_url: '', isAdmin: false, isBlacklisted: false };
   }
   if (typeof updateAuthUI === 'function') updateAuthUI();
   
@@ -177,6 +178,11 @@ function updateAuthUI() {
         document.getElementById('adminUploadBtn')?.classList.remove('hidden');
         if(adminBanner) adminBanner.classList.remove('hidden');
         if(typeof updateAdminStatsUI === 'function') updateAdminStatsUI(); 
+      } else if (currentUser.isBlacklisted) {
+        roleBadge.textContent = '已限制競標';
+        roleBadge.className = 'text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-white font-bold';
+        document.getElementById('adminUploadBtn')?.classList.add('hidden');
+        if(adminBanner) adminBanner.classList.add('hidden');
       } else {
         roleBadge.textContent = currentUser.phone ? '已綁電話' : '未綁電話';
         roleBadge.className = currentUser.phone ? 'text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-[10px] px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200';

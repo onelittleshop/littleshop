@@ -377,6 +377,9 @@ async function handleCreateAuction(e) {
 }
 async function placeBid(itemId) {
   if (!currentUser) return openLoginModal();
+  if (currentUser.isBlacklisted) {
+    return alert('🚫 您的帳號因違反拍賣規則（如棄標）已被列入黑名單，無法參與競標。如有疑問請 IG 私訊管理員。');
+  }
   if (!currentUser.phone) {
     alert('⚠️ 您的帳號尚未綁定香港電話，請先前往「修改資料」綁定電話後才能下標！');
     return openProfileModal(false);
