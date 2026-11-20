@@ -1,3 +1,34 @@
+// ==================== [全域輕提示 Toast] ====================
+function showToast(message, type = 'info', duration = 2800) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return alert(message);
+
+  const styles = {
+    success: 'bg-emerald-600 text-white border-emerald-500',
+    error: 'bg-rose-600 text-white border-rose-500',
+    info: 'bg-slate-900 text-white border-slate-700'
+  };
+  const icons = {
+    success: '<i class="fa-solid fa-circle-check mr-2 shrink-0"></i>',
+    error: '<i class="fa-solid fa-circle-exclamation mr-2 shrink-0"></i>',
+    info: '<i class="fa-solid fa-circle-info mr-2 shrink-0"></i>'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `pointer-events-auto flex items-center px-4 py-2.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold transition-all duration-300 opacity-0 -translate-y-2 ${styles[type] || styles.info}`;
+  toast.innerHTML = `${icons[type] || icons.info}<span>${String(message).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove('opacity-0', '-translate-y-2');
+  });
+
+  setTimeout(() => {
+    toast.classList.add('opacity-0', '-translate-y-2');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
 function openRulesModal() {
   document.getElementById('rulesModal')?.classList.remove('hidden');
 }
@@ -18,7 +49,7 @@ function copyItemLink() {
   const url = window.location.href;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
-      alert('✅ 已複製此商品專屬連結！可直接貼上分享給朋友或 IG。');
+      showToast('✅ 已複製商品連結！可直接貼上分享', 'success');
     }).catch(() => {
       prompt('請手動複製以下連結：', url);
     });
@@ -49,7 +80,7 @@ function openProfileModal(isForced) {
   
   if (isForced) {
     if(cancelBtn) cancelBtn.classList.add('hidden');
-    if(title) title.textContent = '完善聯絡資料 (參與競標前必填)';
+    if(title) title.textContent = '完善聯絡資料 (選填)';
   } else {
     if(cancelBtn) cancelBtn.classList.remove('hidden');
     if(title) title.textContent = '檢視聯絡資料';
@@ -106,7 +137,7 @@ function renderUploadImagePreviews() {
 }
 
 function openUploadModal() {
-  if (!currentUser?.isAdmin) return alert('權限不足');
+  if (!currentUser?.isAdmin) return showToast('權限不足', 'error');
   editingAuctionId = null;
   document.getElementById('uploadForm')?.reset();
   tempImagesBase64 = [];
@@ -343,7 +374,7 @@ async function openDetailModal(id) {
   document.getElementById('detailTitle').textContent = item.title;
   document.getElementById('detailDesc').textContent = item.desc || '暫無詳細描述';
   document.getElementById('detailCat').textContent = item.subCategory ? `${item.category} / ${item.subCategory}` : item.category;
-  document.getElementById('detailLocation').textContent = `${item.location}`;
+  document.getElementById('detailLocation').textContent = typeof formatCardLocation === 'function' ? formatCardLocation(item.location) : item.location;
   document.getElementById('detailStartPrice').textContent = item.startPrice;
   document.getElementById('detailIncrement').textContent = item.bidIncrement;
   document.getElementById('detailPriceLabel').textContent = item.bids.length > 0 ? '目前出價' : '起標價格';
@@ -409,7 +440,13 @@ async function openDetailModal(id) {
   } else if (isEnded) {
     actionArea.innerHTML = `<div class="text-center py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-sm">本場拍賣已結標</div>`;
   } else if (!item.isBiddable) {
-    actionArea.innerHTML = `<div class="text-center py-3 px-3 bg-indigo-50 text-indigo-800 border border-indigo-100 rounded-xl font-bold text-xs sm:text-sm">✨ 預熱展示中，即將開放出價（可先追蹤 IG 接收開標通知）</div>`;
+    actionArea.innerHTML = `
+      <div class="text-center py-3 px-3 bg-indigo-50 text-indigo-900 border border-indigo-100 rounded-xl space-y-2">
+        <div class="font-bold text-xs sm:text-sm">✨ 預熱展示中，即將開放出價</div>
+        <a href="https://www.instagram.com/one_little_shop" target="_blank" class="inline-flex items-center justify-center bg-gradient-to-r from-[#f09433] via-[#dc2743] to-[#bc1888] text-white text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:opacity-95 transition">
+          <i class="fa-brands fa-instagram mr-1.5 text-sm"></i>追蹤 IG 接收開標通知
+        </a>
+      </div>`;
   } else {
     const nextMin = item.bids.length === 0 ? item.startPrice : (item.currentPrice + item.bidIncrement);
     const inc = item.bidIncrement;
@@ -534,7 +571,7 @@ async function toggleAuctionPinned() {
   if (!item) return;
   const newPinned = !item.isPinned;
   const { error } = await sb.from('auctions').update({ is_pinned: newPinned }).eq('id', activeDetailId);
-  if (error) return alert('更新置頂狀態失敗（請確認已在 Supabase 新增 is_pinned 欄位）：' + error.message);
+  if (error) return showToast('更新置頂狀態失敗：' + error.message, 'error');
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
@@ -545,7 +582,7 @@ async function toggleAuctionVisibility() {
   if (!item) return;
   const newVisible = !item.isVisible;
   const { error } = await sb.from('auctions').update({ is_visible: newVisible }).eq('id', activeDetailId);
-  if (error) return alert('更新狀態失敗：' + error.message);
+  if (error) return showToast('更新狀態失敗：' + error.message, 'error');
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
@@ -556,7 +593,7 @@ async function toggleAuctionBiddable() {
   if (!item) return;
   const newBiddable = !item.isBiddable;
   const { error } = await sb.from('auctions').update({ is_biddable: newBiddable }).eq('id', activeDetailId);
-  if (error) return alert('更新狀態失敗：' + error.message);
+  if (error) return showToast('更新狀態失敗：' + error.message, 'error');
   await fetchAuctions();
   openDetailModal(activeDetailId);
 }
@@ -582,9 +619,9 @@ async function notifyWinner(auctionId, winnerId, winnerName) {
   }]);
 
   if (error) {
-    alert('發送通知失敗：' + error.message);
+    showToast('發送通知失敗：' + error.message, 'error');
   } else {
-    alert('✅ 已成功發送得標通知與專屬對話視窗給買家！');
+    showToast('✅ 已發送得標通知給買家！', 'success');
     fetchUserMessages();
   }
 }
@@ -632,7 +669,7 @@ function closeAdminMsgModal() { document.getElementById('adminMsgModal').classLi
 
 async function handleAdminSendMessage(e) {
   e.preventDefault();
-  if (!currentUser?.isAdmin) return alert('權限不足');
+  if (!currentUser?.isAdmin) return showToast('權限不足', 'error');
   const targetUuid = document.getElementById('adminTargetUuid').value.trim();
   const content = document.getElementById('adminMsgContent').value.trim();
 
@@ -646,9 +683,9 @@ async function handleAdminSendMessage(e) {
   }]);
 
   if (error) {
-    alert('發送失敗：' + error.message);
+    showToast('發送失敗：' + error.message, 'error');
   } else {
-    alert('✅ 訊息已成功發送給指定用戶！');
+    showToast('✅ 訊息已發送！', 'success');
     closeAdminMsgModal();
     document.getElementById('adminMsgContent').value = '';
     document.getElementById('adminTargetUuid').value = '';
@@ -1005,7 +1042,7 @@ async function handleReplyMessage(e) {
   }]);
 
   if (error) {
-    alert('發送失敗：' + error.message);
+    showToast('發送失敗：' + error.message, 'error');
     userMessages = userMessages.filter(m => m.id !== tempMsg.id);
     renderChatHistory();
     showMessagesList();
@@ -1125,9 +1162,9 @@ async function adminBlacklistUser(userId, userName) {
   if (!confirm(`確定要將【${userName}】列入黑名單嗎？\n\n列入後該用戶將無法在網站出價。`)) return;
   const { error } = await sb.from('profiles').update({ is_blacklisted: true }).eq('id', userId);
   if (error) {
-    alert('加入黑名單失敗（請確認已在 Supabase 執行黑名單 SQL）：' + error.message);
+    showToast('加入黑名單失敗：' + error.message, 'error');
   } else {
-    alert(`🚫 已將【${userName}】列入黑名單！`);
+    showToast(`🚫 已將【${userName}】列入黑名單`, 'info');
   }
 }
 
@@ -1219,15 +1256,15 @@ async function deleteActiveAuction() {
   if (item.bids.length > 0) {
     const { error: bidsDelErr } = await sb.from('bids').delete().eq('auction_id', activeDetailId);
     if (bidsDelErr) {
-      return alert('刪除出價紀錄失敗（請確認已在 Supabase 執行管理員刪除權限 SQL）：' + bidsDelErr.message);
+      return showToast('刪除出價紀錄失敗：' + bidsDelErr.message, 'error');
     }
   }
 
   const { error } = await sb.from('auctions').delete().eq('id', activeDetailId);
   if (error) {
-    alert('刪除商品失敗：' + error.message);
+    showToast('刪除商品失敗：' + error.message, 'error');
   } else {
-    alert('🗑️ 已永久刪除拍賣品！');
+    showToast('🗑️ 已永久刪除拍賣品', 'info');
     closeDetailModal();
     await fetchAuctions();
   }
@@ -1240,9 +1277,9 @@ async function bulkSetBiddable(isBiddable) {
 
   const { error } = await sb.from('auctions').update({ is_biddable: isBiddable }).eq('is_visible', true);
   if (error) {
-    alert('批次更新失敗：' + error.message);
+    showToast('批次更新失敗：' + error.message, 'error');
   } else {
-    alert(`✅ 已成功將所有顯示中的拍賣品${actionLabel}！`);
+    showToast(`✅ 已將所有顯示中的拍賣品${actionLabel}`, 'success');
     await fetchAuctions();
   }
 }
@@ -1302,7 +1339,7 @@ function renderSettlementContent() {
       <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div>
           <div class="font-bold text-slate-900">${u.nickname || '未命名用戶'}</div>
-          <div class="text-slate-500 mt-0.5">電話：${u.phone ? '+852 ' + u.phone : '未綁定'} ｜ <span class="font-mono text-[10px]">${u.id}</span></div>
+          <div class="text-slate-500 mt-0.5">電話：${u.phone ? '+852 ' + u.phone : '未填寫'} ｜ <span class="font-mono text-[10px]">${u.id}</span></div>
         </div>
         <button onclick="adminUnblacklistUser('${u.id}', '${String(u.nickname || '').replace(/'/g, "\'")}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition">
           <i class="fa-solid fa-rotate-left mr-1"></i>解除黑名單
@@ -1366,7 +1403,7 @@ function renderSettlementContent() {
           <div>
             <span class="font-bold text-slate-700">🥈 候補：${runnerUp.bidderName}</span>
             <span class="text-amber-600 font-bold ml-1">($${runnerUp.amount})</span>
-            <span class="text-slate-500 ml-1">${rPhone ? '📞 ' + rPhone : '未綁電話'}</span>
+            <span class="text-slate-500 ml-1">${rPhone ? '📞 ' + rPhone : '未填電話（可站內聯絡）'}</span>
             ${rProfile.is_blacklisted ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">黑名單</span>' : ''}
           </div>
           <div class="flex items-center gap-1.5">
@@ -1393,7 +1430,7 @@ function renderSettlementContent() {
             <div class="mt-2 bg-emerald-50/70 border border-emerald-100 rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div>
                 <span class="font-bold text-emerald-900">🏆 ${isEnded ? '得標者' : '目前領先'}：${winner.bidderName}</span>
-                <span class="text-slate-600 ml-2 font-mono">${wPhone ? '📞 ' + wPhone : '⚠️ 未綁電話'}</span>
+                <span class="text-slate-600 ml-2 font-mono">${wPhone ? '📞 ' + wPhone : '未填電話（請用站內通知）'}</span>
                 ${wProfile.is_blacklisted ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-rose-600 text-white font-bold text-[10px]">黑名單</span>' : ''}
               </div>
               <div class="flex flex-wrap items-center gap-1.5">
@@ -1422,9 +1459,9 @@ async function adminUnblacklistUser(userId, userName) {
   if (!confirm(`確定要解除【${userName}】的黑名單限制嗎？`)) return;
   const { error } = await sb.from('profiles').update({ is_blacklisted: false }).eq('id', userId);
   if (error) {
-    alert('解除黑名單失敗：' + error.message);
+    showToast('解除黑名單失敗：' + error.message, 'error');
   } else {
-    alert(`✅ 已解除【${userName}】的黑名單限制！`);
+    showToast(`✅ 已解除【${userName}】的黑名單限制`, 'success');
     if (adminProfilesMap[userId]) adminProfilesMap[userId].is_blacklisted = false;
     renderSettlementContent();
   }

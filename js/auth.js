@@ -1,11 +1,11 @@
 // ==================== [模塊：Auth & User Profile] ====================
 async function oauthLogin(provider) {
-  if (!sb) return alert('請先填入 Supabase 憑證');
+  if (!sb) return showToast('請先填入 Supabase 憑證', 'error');
   const { error } = await sb.auth.signInWithOAuth({
     provider,
     options: { redirectTo: window.location.origin + window.location.pathname }
   });
-  if (error) alert('OAuth 登入錯誤：' + error.message);
+  if (error) showToast('OAuth 登入錯誤：' + error.message, 'error');
 }
 
 async function loadUserProfile(userId) {
@@ -99,11 +99,11 @@ async function handleProfileSave(e) {
   e.preventDefault();
   const phoneInput = document.getElementById('profilePhone').value.trim();
 
-  if (phoneInput && !/^[0-9]{8}$/.test(phoneInput)) return alert('請輸入有效的 8 位數香港電話！');
+  if (phoneInput && !/^[0-9]{8}$/.test(phoneInput)) return showToast('請輸入有效的 8 位數香港電話！', 'error');
 
   const hasBids = auctions.some(a => a.bids.some(b => b.bidderId === currentUser.id));
   if (hasBids && currentUser.phone && currentUser.phone !== phoneInput) {
-    return alert('你目前有正在參與的競標，電話號碼暫時無法更改！');
+    return showToast('你目前有正在參與的競標，電話號碼暫時無法更改！', 'error');
   }
 
   const finalAvatar = tempAvatarBase64 || currentUser.avatar_url || '';
@@ -114,7 +114,7 @@ async function handleProfileSave(e) {
     avatar_url: finalAvatar
   });
 
-  if (error) return alert('儲存失敗：' + error.message);
+  if (error) return showToast('儲存失敗：' + error.message, 'error');
 
   currentUser.phone = phoneInput;
   currentUser.avatar_url = finalAvatar;
@@ -123,7 +123,7 @@ async function handleProfileSave(e) {
   if(modal) modal.classList.add('hidden');
   updateAuthUI();
   if (typeof renderAuctions === 'function') renderAuctions();
-  alert('✨ 聯絡資料儲存成功！');
+  showToast('✨ 聯絡資料儲存成功！', 'success');
 }
 
 async function logout() {
@@ -161,9 +161,11 @@ function updateAuthUI() {
   }).length : 0;
   if (myWonCountBadge) myWonCountBadge.textContent = myWonCount;
 
+  const viewTabsBar = document.getElementById('viewTabsBar');
   if (currentUser) {
     if(guestView) guestView.classList.add('hidden');
     if(userView) userView.classList.remove('hidden');
+    if(viewTabsBar) viewTabsBar.classList.remove('hidden');
     
     const userNameDisplay = document.getElementById('userNameDisplay');
     if(userNameDisplay) userNameDisplay.textContent = currentUser.nickname || '未設定';
@@ -191,8 +193,8 @@ function updateAuthUI() {
         document.getElementById('adminUploadBtn')?.classList.add('hidden');
         if(adminBanner) adminBanner.classList.add('hidden');
       } else {
-        roleBadge.textContent = currentUser.phone ? '已綁電話' : '未綁電話';
-        roleBadge.className = currentUser.phone ? 'text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-[10px] px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200';
+        roleBadge.textContent = currentUser.phone ? '已填電話' : '可參與競標';
+        roleBadge.className = currentUser.phone ? 'text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-[10px] px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200';
         document.getElementById('adminUploadBtn')?.classList.add('hidden');
         if(adminBanner) adminBanner.classList.add('hidden');
       }
@@ -201,5 +203,6 @@ function updateAuthUI() {
     if(guestView) guestView.classList.remove('hidden');
     if(userView) userView.classList.add('hidden');
     if(adminBanner) adminBanner.classList.add('hidden');
+    if(viewTabsBar) viewTabsBar.classList.add('hidden');
   }
 }

@@ -1,3 +1,28 @@
+
+function formatCardLocation(loc) {
+  const s = String(loc || '面交 · 葵興地鐵站');
+  if (s.includes('順豐')) return s;
+  return s + ' / 可順豐';
+}
+
+function formatCardEndTime(endTimeStr) {
+  const now = new Date();
+  const end = new Date(endTimeStr);
+  const diff = end - now;
+  if (diff <= 0) {
+    return { text: '已截標', urgent: false, ended: true };
+  }
+  const hours24 = 24 * 60 * 60 * 1000;
+  if (diff <= hours24) {
+    const hrs = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const text = hrs > 0 ? `剩餘 ${hrs}小時 ${mins}分` : `剩餘 ${Math.max(1, mins)}分鐘`;
+    return { text, urgent: true, ended: false };
+  }
+  const formatted = end.toLocaleString('zh-HK', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' 截標';
+  return { text: formatted, urgent: false, ended: false };
+}
+
 // ==================== [模塊：Auctions & Bidding] ====================
 let tempImagesBase64 = [];
 let editingAuctionId = null;
@@ -244,7 +269,7 @@ function renderAuctions() {
             <div>
               <div class="flex flex-wrap items-center gap-1 mb-1">
                 <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
-                <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
+                <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${formatCardLocation(item.location)}</span>
               </div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1">${item.title}</h3>
             </div>
@@ -253,9 +278,11 @@ function renderAuctions() {
                 <span class="text-[10px] text-slate-400">${item.bids.length > 0 ? `目前出價 (${item.bids.length}口)` : '起標價格'}</span>
                 <span class="text-sm sm:text-base font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
               </div>
-              <div class="text-[10px] mt-1 ${isEnded ? 'text-rose-400' : 'text-slate-400'} flex items-center">
-                <i class="fa-regular fa-clock mr-1"></i>${isEnded ? '已截標' : new Date(item.endTime).toLocaleString('zh-HK', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false}) + ' 截標'}
-              </div>
+              ${(() => {
+                const t = formatCardEndTime(item.endTime);
+                const cls = t.ended ? 'text-rose-400' : (t.urgent ? 'text-rose-600 font-bold' : 'text-slate-400');
+                return `<div class="text-[10px] mt-1 ${cls} flex items-center"><i class="fa-regular fa-clock mr-1"></i>${t.text}</div>`;
+              })()}
             </div>
           </div>
         </div>
@@ -290,7 +317,7 @@ function renderAuctions() {
             <div class="flex flex-wrap items-center gap-1.5 mb-1">
               ${listPinBadge}
               <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">${catLabel}</span>
-              <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${item.location}</span>
+              <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-solid fa-location-dot mr-0.5"></i>${formatCardLocation(item.location)}</span>
               <span class="text-[10px] ${!item.isVisible ? 'text-slate-500' : isEnded ? 'text-rose-500' : !item.isBiddable ? 'text-slate-600' : 'text-emerald-600'} font-bold">${!item.isVisible ? '已隱藏' : (isEnded ? '已截標' : !item.isBiddable ? '即將開標' : '競標中')}</span>
             </div>
             <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">${item.title}</h3>
@@ -299,7 +326,11 @@ function renderAuctions() {
           <div class="text-right shrink-0 pl-2">
             <span class="text-[10px] text-slate-400 block">${item.bids.length > 0 ? '目前出價' : '起標價格'}</span>
             <span class="text-base sm:text-lg font-extrabold text-amber-600">$${item.bids.length > 0 ? item.currentPrice : item.startPrice}</span>
-            <span class="text-[10px] block mt-0.5 ${isEnded ? 'text-rose-400' : 'text-slate-400'}">${isEnded ? '已截標' : new Date(item.endTime).toLocaleString('zh-HK', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false})}</span>
+            ${(() => {
+              const t = formatCardEndTime(item.endTime);
+              const cls = t.ended ? 'text-rose-400' : (t.urgent ? 'text-rose-600 font-bold' : 'text-slate-400');
+              return `<span class="text-[10px] block mt-0.5 ${cls}">${t.text}</span>`;
+            })()}
           </div>
         </div>
       `;
@@ -309,8 +340,8 @@ function renderAuctions() {
 
 async function handleCreateAuction(e) {
   e.preventDefault();
-  if (!currentUser?.isAdmin) return alert('權限不足');
-  if (tempImagesBase64.length === 0) return alert('請至少上傳一張相片');
+  if (!currentUser?.isAdmin) return showToast('權限不足', 'error');
+  if (tempImagesBase64.length === 0) return showToast('請至少上傳一張相片', 'error');
 
   const title = document.getElementById('itemTitle').value.trim();
   let category = '';
@@ -321,7 +352,7 @@ async function handleCreateAuction(e) {
   }
   const subCategory = document.getElementById('itemSubCategory')?.value.trim() || '';
 
-  if (!category) return alert('請選擇或輸入分類！');
+  if (!category) return showToast('請選擇或輸入分類！', 'error');
   const startPrice = Number(document.getElementById('startPrice').value);
   const bidIncrement = Number(document.getElementById('bidIncrement').value);
   const endTimeInput = document.getElementById('endTime').value;
@@ -367,9 +398,9 @@ async function handleCreateAuction(e) {
     };
     const { error } = await sb.from('auctions').update(updatePayload).eq('id', targetId);
     if (error) {
-      alert('儲存修改失敗：' + error.message);
+      showToast('儲存修改失敗：' + error.message, 'error');
     } else {
-      alert('✨ 拍賣品資料已更新！');
+      showToast('✨ 拍賣品資料已更新！', 'success');
       closeUploadModal();
       await fetchAuctions();
       openDetailModal(targetId);
@@ -395,9 +426,9 @@ async function handleCreateAuction(e) {
 
     const { error } = await sb.from('auctions').insert([newItem]);
     if (error) {
-      alert('上架失敗：' + error.message);
+      showToast('上架失敗：' + error.message, 'error');
     } else {
-      alert('✨ 拍賣品成功上架，新分類已自動儲存！');
+      showToast('✨ 拍賣品成功上架！', 'success');
       closeUploadModal();
       await fetchAuctions();
     }
@@ -406,12 +437,9 @@ async function handleCreateAuction(e) {
 async function placeBid(itemId) {
   if (!currentUser) return openLoginModal();
   if (currentUser.isBlacklisted) {
-    return alert('🚫 您的帳號因違反拍賣規則（如棄標）已被列入黑名單，無法參與競標。如有疑問請 IG 私訊管理員。');
+    return showToast('🚫 您的帳號已被列入黑名單，無法參與競標。', 'error', 4000);
   }
-  if (!currentUser.phone) {
-    alert('⚠️ 您的帳號尚未綁定香港電話，請先前往「修改資料」綁定電話後才能下標！');
-    return openProfileModal(false);
-  }
+  // 聯絡電話已改為選填，無需強制綁定即可出價
 
   const item = auctions.find(a => a.id === itemId);
   if (!item) return;
@@ -421,13 +449,13 @@ async function placeBid(itemId) {
   const nextMin = isFirstBid ? item.startPrice : (item.currentPrice + item.bidIncrement);
 
   if (inputAmt < nextMin) {
-    return alert(`出價金額不得低於 $${nextMin}`);
+    return showToast(`出價金額不得低於 $${nextMin}`, 'error');
   }
   
   const basePrice = isFirstBid ? item.startPrice : item.currentPrice;
   const diff = inputAmt - basePrice;
   if (diff % item.bidIncrement !== 0) {
-    return alert(`出價增幅必須是每口價 ($${item.bidIncrement}) 的整數倍！`);
+    return showToast(`出價增幅必須是每口價 ($${item.bidIncrement}) 的整數倍！`, 'error');
   }
 
   // 檢查是否在最後 1 分鐘內出價，若是則自動延長 5 分鐘
@@ -451,7 +479,7 @@ async function placeBid(itemId) {
   }]);
 
   if (bidError) {
-    return alert('出價失敗：' + bidError.message);
+    return showToast('出價失敗：' + bidError.message, 'error');
   }
 
   // Update auction table accurately using schema fields
@@ -464,12 +492,12 @@ async function placeBid(itemId) {
   }).eq('id', itemId);
 
   if (updateError) {
-    alert('更新價格失敗：' + updateError.message);
+    showToast('更新價格失敗：' + updateError.message, 'error');
   } else {
     if (isExtended) {
-      alert('🎉 出價成功！\n\n⏱️ 因在最後 1 分鐘內出價，系統已自動將截標時間延長 5 分鐘！');
+      showToast('🎉 出價成功！因最後 1 分鐘出價，截標時間已自動延長 5 分鐘 ⏱️', 'success', 4500);
     } else {
-      alert('🎉 出價成功！');
+      showToast('🎉 出價成功！您目前為最高出價者', 'success');
     }
     await logActivity('place_bid', itemId);
     await fetchAuctions();

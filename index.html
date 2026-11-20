@@ -3,13 +3,13 @@
 <head>
   <!-- ==================== [模塊 1：網頁標頭與全域設定] ==================== -->
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>一間小店 | 收藏限時拍賣購買</title>
   <link rel="icon" href="./logo.png" type="image/png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795162764">
+  <link rel="stylesheet" href="./css/style.css?v=1795164275">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -39,7 +39,7 @@
           <i class="fa-solid fa-book-open text-amber-500 mr-1"></i><span class="hidden sm:inline">拍賣規則</span><span class="sm:hidden">規則</span>
         </button>
         <div id="guestAuthView" class="flex items-center space-x-2">
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+          <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
             <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>訪客觀標中
           </span>
           <button onclick="openLoginModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full shadow-sm transition flex items-center space-x-1.5">
@@ -85,7 +85,7 @@
         <i class="fa-solid fa-bullhorn text-amber-500 mr-2 shrink-0"></i>
         <div class="marquee-container">
           <div class="marquee-text font-medium tracking-wide">
-            🎉 公測預熱中！11月23日 22:00 截標｜最後 1 分鐘出價自動延長 5 分鐘｜追蹤 <a href="https://www.instagram.com/one_little_shop" target="_blank" class="text-rose-500 font-bold hover:text-rose-600 underline mx-1">IG</a> 接收開標通知 ✨
+            🎉 限時拍賣 11月23日 22:00 截標｜0% 手續費｜葵興/荃灣面交或順豐到付｜最後 1 分鐘出價自動延長 5 分鐘｜追蹤 <a href="https://www.instagram.com/one_little_shop" target="_blank" class="text-rose-500 font-bold hover:text-rose-600 underline mx-1">IG</a> 接收開標通知 ✨
           </div>
         </div>
       </div>
@@ -100,7 +100,7 @@
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex flex-wrap gap-2">
+          <div id="viewTabsBar" class="hidden flex flex-wrap gap-2">
             <button id="tabAll" onclick="switchView('all')" class="px-4 py-1.5 rounded-full text-sm font-medium bg-slate-900 text-white shadow-sm transition whitespace-nowrap">
               <i class="fa-solid fa-fire text-amber-400 mr-1"></i> 全部拍賣場
             </button>
@@ -209,8 +209,8 @@
           <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block whitespace-nowrap">
             IG 即時對話 💬
           </div>
-          <div class="bg-white text-slate-800 border-2 border-slate-200 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 hover:-rotate-6 transition-all duration-300">
-            <i class="fa-brands fa-facebook-messenger text-[22px]"></i>
+          <div class="bg-white/90 text-slate-800 border-2 border-slate-200 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:bg-white hover:scale-110 hover:-rotate-6 transition-all duration-300">
+            <i class="fa-brands fa-facebook-messenger text-[18px] sm:text-[22px]"></i>
           </div>
         </a>
 
@@ -219,8 +219,8 @@
           <div class="mr-3 bg-white text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block whitespace-nowrap">
             追蹤最新動態 ✨
           </div>
-          <div class="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 hover:scale-110 hover:-rotate-6 transition-all duration-300">
-            <i class="fa-brands fa-instagram text-[26px]"></i>
+          <div class="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] opacity-90 hover:opacity-100 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 hover:scale-110 hover:-rotate-6 transition-all duration-300">
+            <i class="fa-brands fa-instagram text-[21px] sm:text-[26px]"></i>
           </div>
         </a>
       </div>
@@ -357,7 +357,7 @@
         <h3 class="text-lg font-bold text-slate-900">登入參與競標</h3>
         <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <p class="text-xs text-slate-500 mb-4">登入後系統會自動以電郵生成匿名名稱，只需綁定聯絡電話即可參與競標，平台絕不公開您的個人資料。</p>
+      <p class="text-xs text-slate-500 mb-4">登入後系統會自動以電郵生成匿名名稱，無需填寫電話即可直接參與競標，平台絕不公開您的個人資料。</p>
       
       <div class="space-y-2.5">
         <button onclick="oauthLogin('google')" class="w-full flex items-center justify-center space-x-3 py-2.5 px-4 border border-slate-300 rounded-xl hover:bg-slate-50 font-medium text-sm text-slate-700 shadow-sm transition">
@@ -376,7 +376,7 @@
         </div>
         <div>
           <h3 class="text-sm font-bold text-amber-950" id="profileModalTitle">首次登入：完善個人資料</h3>
-          <p class="text-xs text-amber-800">💡 參與競標需要綁定聯絡電話，以便得標後能順利安排交收！如需要更改電話號碼，只可以直接IG dm管理員</p>
+          <p class="text-xs text-amber-800">💡 聯絡電話為選填項，僅作得標後 WhatsApp 即時聯絡交收，絕不作推廣或公開。不填寫亦可參與競標（得標後將以站內訊息及電郵通知）。</p>
         </div>
       </div>
 
@@ -398,7 +398,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">香港聯絡電話 / WhatsApp (非必填，但**無電話者無法下標**) *</label>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">香港聯絡電話 / WhatsApp (選填，建議填寫以便 WhatsApp 聯絡交收)</label>
           <div class="flex">
             <span class="inline-flex items-center px-3 text-xs text-slate-500 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg">+852</span>
             <input type="tel" id="profilePhone" inputmode="numeric" pattern="[0-9]{8}" placeholder="8位數字，例如 91234567" class="w-full px-3 py-2 border border-slate-300 rounded-r-lg text-sm">
@@ -643,7 +643,7 @@
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
           <h4 class="font-bold text-slate-800 mb-1"><i class="fa-solid fa-user-shield mr-1"></i>私隱保障</h4>
-          <p>系統自動以電郵生成匿名代號（如 <code>abxxx56@gmail.com</code>）顯示於出價紀錄。綁定之聯絡電話僅供得標後安排交收之用，絕不對外公開。</p>
+          <p>系統自動以電郵生成匿名代號（如 <code>abxxx56@gmail.com</code>）顯示於出價紀錄。聯絡電話為選填項目，僅供得標後安排交收之用，絕不作推廣或對外公開。</p>
         </div>
       </div>
       <div class="mt-5">
@@ -699,10 +699,13 @@
     <div class="absolute bottom-4 text-white/60 text-[11px] pointer-events-none">點擊空白處或右上角關閉</div>
   </div>
 
-  <script src="./js/config.js?v=1795162764"></script>
-  <script src="./js/analytics.js?v=1795162764"></script>
-  <script src="./js/auth.js?v=1795162764"></script>
-  <script src="./js/auctions.js?v=1795162764"></script>
-  <script src="./js/ui.js?v=1795162764"></script>
+  <!-- ==================== [全域輕提示 Toast] ==================== -->
+  <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[70] flex flex-col items-center gap-2 pointer-events-none w-[92vw] max-w-sm"></div>
+
+  <script src="./js/config.js?v=1795164275"></script>
+  <script src="./js/analytics.js?v=1795164275"></script>
+  <script src="./js/auth.js?v=1795164275"></script>
+  <script src="./js/auctions.js?v=1795164275"></script>
+  <script src="./js/ui.js?v=1795164275"></script>
 </body>
 </html>
