@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./css/style.css?v=1795161696">
+  <link rel="stylesheet" href="./css/style.css?v=1795162764">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans relative">
 
@@ -170,7 +170,7 @@
             <div class="flex flex-wrap items-center gap-2 mb-1">
               <h3 class="text-sm font-bold text-amber-950">官方管理員模式</h3>
               <button onclick="openStatsModal()" class="bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-0.5 rounded font-bold text-[10px] cursor-pointer shadow-sm transition flex items-center">
-                主頁今日瀏覽：<span id="adminVisitCount" class="mx-1">0</span> 人 <i class="fa-solid fa-magnifying-glass-chart ml-1"></i>
+                今日真實流量：<span id="adminVisitCount" class="mx-1">0 人</span> <i class="fa-solid fa-magnifying-glass-chart ml-1"></i>
               </button>
             </div>
             <p class="text-[11px] sm:text-xs text-amber-800">可上架拍賣品、隱藏物品、控制出價權限，並發送站內訊息。</p>
@@ -227,15 +227,55 @@
     </div>
   </div>
 
-  <!-- ==================== [流量統計詳情 Modal] ==================== -->
-  <div id="statsModal" onclick="if(event.target === this) document.getElementById('statsModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-sm w-full p-6 shadow-2xl modal-enter flex flex-col max-h-[85vh]">
-      <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-        <h3 class="text-base font-bold text-slate-900"><i class="fa-solid fa-chart-pie text-amber-500 mr-2"></i>歷年流量與設備統計</h3>
-        <button onclick="document.getElementById('statsModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+  <!-- ==================== [流量統計與營運分析 Modal] ==================== -->
+  <div id="statsModal" onclick="if(event.target === this) document.getElementById('statsModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl modal-enter flex flex-col max-h-[90vh]">
+      <div class="flex flex-wrap justify-between items-center gap-2 mb-3 pb-3 border-b border-slate-100 shrink-0">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900"><i class="fa-solid fa-chart-line text-amber-500 mr-2"></i>歷年流量與營運數據中心</h3>
+          <p id="statsSummarySubtitle" class="text-[11px] text-slate-500 mt-0.5">載入中...</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center space-x-1.5 text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1.5 rounded-lg cursor-pointer select-none">
+            <input type="checkbox" id="statsHideAdminChk" checked onchange="renderStatsDashboard()" class="accent-amber-500 w-3.5 h-3.5">
+            <span>隱藏管理員紀錄</span>
+          </label>
+          <button onclick="document.getElementById('statsModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
       </div>
-      <div id="statsListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 text-sm no-scrollbar">
-        <div class="text-center py-4 text-slate-400 text-xs">數據載入中...</div>
+
+      <!-- KPI 摘要卡片 -->
+      <div id="statsKpiBar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 shrink-0"></div>
+
+      <!-- 分頁切換 -->
+      <div class="flex flex-wrap gap-1.5 mb-3 shrink-0">
+        <button id="statsTabLogs" onclick="switchStatsTab('logs')" class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-white shadow-sm transition">📋 瀏覽明細</button>
+        <button id="statsTabItems" onclick="switchStatsTab('items')" class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">🔥 熱門商品</button>
+        <button id="statsTabDaily" onclick="switchStatsTab('daily')" class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">📅 每日趨勢</button>
+        <button id="statsTabSources" onclick="switchStatsTab('sources')" class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">📣 推廣來源</button>
+      </div>
+
+      <!-- 瀏覽明細篩選列 (僅在 logs 分頁顯示) -->
+      <div id="statsLogsFilterBar" class="flex flex-wrap items-center gap-2 mb-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs shrink-0">
+        <select id="statsDateFilter" onchange="renderStatsDashboard()" class="px-2 py-1.5 border border-slate-200 rounded-lg bg-white text-slate-700 font-medium">
+          <option value="all">全部日期</option>
+          <option value="today">今日</option>
+          <option value="7d">最近 7 天</option>
+        </select>
+        <select id="statsTypeFilter" onchange="renderStatsDashboard()" class="px-2 py-1.5 border border-slate-200 rounded-lg bg-white text-slate-700 font-medium">
+          <option value="all">全部行為</option>
+          <option value="logged_in">只看已登入用戶</option>
+          <option value="auction_detail">只看商品瀏覽</option>
+          <option value="place_bid">只看出價紀錄</option>
+        </select>
+        <div class="relative flex-1 min-w-[160px]">
+          <input type="text" id="statsSearchInput" oninput="renderStatsDashboard()" placeholder="搜尋電郵、姓名或商品名稱..." class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+          <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-[11px]"></i>
+        </div>
+      </div>
+
+      <div id="statsListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 text-sm no-scrollbar">
+        <div class="text-center py-8 text-slate-400 text-xs">數據載入中...</div>
       </div>
     </div>
   </div>
@@ -659,10 +699,10 @@
     <div class="absolute bottom-4 text-white/60 text-[11px] pointer-events-none">點擊空白處或右上角關閉</div>
   </div>
 
-  <script src="./js/config.js?v=1795161696"></script>
-  <script src="./js/analytics.js?v=1795161696"></script>
-  <script src="./js/auth.js?v=1795161696"></script>
-  <script src="./js/auctions.js?v=1795161696"></script>
-  <script src="./js/ui.js?v=1795161696"></script>
+  <script src="./js/config.js?v=1795162764"></script>
+  <script src="./js/analytics.js?v=1795162764"></script>
+  <script src="./js/auth.js?v=1795162764"></script>
+  <script src="./js/auctions.js?v=1795162764"></script>
+  <script src="./js/ui.js?v=1795162764"></script>
 </body>
 </html>

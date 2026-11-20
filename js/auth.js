@@ -12,14 +12,19 @@ async function loadUserProfile(userId) {
   if (!sb) return;
   let uid = userId;
   let email = '';
+  let fullName = '';
   
   if (typeof uid === 'object' && uid !== null) {
-    email = uid.email || uid.user?.email || '';
-    uid = uid.id || uid.user?.id || '';
+    const uObj = uid.user || uid;
+    email = uObj.email || '';
+    fullName = uObj.user_metadata?.full_name || uObj.user_metadata?.name || '';
+    uid = uObj.id || '';
   }
-  if (!email) {
+  if (!email || !fullName) {
      const { data: sessionData } = await sb.auth.getSession();
-     email = sessionData?.session?.user?.email || '';
+     const sUser = sessionData?.session?.user;
+     if (!email) email = sUser?.email || '';
+     if (!fullName) fullName = sUser?.user_metadata?.full_name || sUser?.user_metadata?.name || '';
   }
   if (!uid || typeof uid !== 'string') return;
 
@@ -49,6 +54,8 @@ async function loadUserProfile(userId) {
     currentUser = {
       id: uid,
       nickname: dbNickname,
+      email: email,
+      fullName: fullName,
       phone: data?.phone || '',
       avatar_url: data?.avatar_url || '',
       isAdmin: Boolean(data?.is_admin),
@@ -57,7 +64,7 @@ async function loadUserProfile(userId) {
     
   } catch (err) {
     console.warn('載入 Profile 發生異常:', err);
-    currentUser = { id: uid, nickname: getMaskedName(email), phone: '', avatar_url: '', isAdmin: false, isBlacklisted: false };
+    currentUser = { id: uid, nickname: getMaskedName(email), email: email, fullName: fullName, phone: '', avatar_url: '', isAdmin: false, isBlacklisted: false };
   }
   if (typeof updateAuthUI === 'function') updateAuthUI();
   
