@@ -160,7 +160,7 @@ function openUploadModal() {
   const endInput = document.getElementById('endTime');
   if (endInput) {
     // 預設 2026年11月23日 22:00 HKT
-    const targetDate = new Date('2026-11-23T22:00:00+08:00');
+    const targetDate = new Date('2026-11-30T22:00:00+08:00');
     const localDate = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000));
     endInput.value = localDate.toISOString().slice(0, 16);
   }
@@ -474,7 +474,7 @@ async function openDetailModal(id) {
     const safeItemTitle = String(item.title || '').replace(/'/g, "\'");
     actionArea.innerHTML = `
       <div class="text-center py-3.5 px-3 bg-indigo-50 text-indigo-900 border border-indigo-100 rounded-xl space-y-2.5">
-        <div class="font-bold text-xs sm:text-sm">✨ 預熱展示中｜11月21日 (六) 12:00 正式開標</div>
+        <div class="font-bold text-xs sm:text-sm">✨ 預熱展示中｜11月27日 (五) 22:00 正式開標</div>
         <div class="flex flex-wrap items-center justify-center gap-2">
           <button type="button" onclick="addOpenBidCalendarReminder('${safeItemTitle}')" class="inline-flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-sm transition">
             <i class="fa-regular fa-calendar-plus mr-1.5 text-amber-400"></i>加入開標日曆提醒
@@ -1505,7 +1505,7 @@ async function adminUnblacklistUser(userId, userName) {
 }
 
 // ==================== [一鍵加入開標日曆提醒 (支援 iPhone .ics 與 Google 日曆)] ====================
-const OPEN_BID_TIME_HKT = new Date('2026-11-21T12:00:00+08:00');
+const OPEN_BID_TIME_HKT = new Date('2026-11-27T22:00:00+08:00');
 
 function addOpenBidCalendarReminder(itemTitle = '') {
   const title = itemTitle
@@ -1514,9 +1514,9 @@ function addOpenBidCalendarReminder(itemTitle = '') {
   const shopUrl = 'https://onelittleshop.github.io/littleshop/?from=calendar';
   const details = `一間小店限時拍賣正式開標！0% 買家手續費，多款精選 $0 無底價起拍！\n立即入場搶頭香：${shopUrl}`;
 
-  // 2026-11-21 12:00 - 12:30 HKT => 20261121T040000Z - 20261121T043000Z
-  const startUtc = '20261121T040000Z';
-  const endUtc = '20261121T043000Z';
+  // 2026-11-21 12:00 - 12:30 HKT => 20261127T140000Z - 20261127T143000Z
+  const startUtc = '20261127T140000Z';
+  const endUtc = '20261127T143000Z';
 
   const isApple = /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) && !/Chrome|Android/i.test(navigator.userAgent);
 

@@ -293,14 +293,6 @@ function renderAuctions() {
                           !item.isBiddable ? '<span class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">即將開標</span>' :
                           '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">競標中</span>';
 
-      const unseenBadge = (!myBidStatus && isNewUnseen)
-        ? '<span class="absolute top-2 right-2 bg-sky-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-sm z-10">未睇過</span>'
-        : '';
-
-      const seenPill = isSeen
-        ? '<span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-regular fa-eye mr-0.5"></i>已睇過</span>'
-        : '';
-
       let myBidStatus = '';
       if (currentUser && (currentView === 'my_bids' || currentView === 'my_won_bids')) {
           if (isEnded && highestBidderId === currentUser.id) {
@@ -311,6 +303,14 @@ function renderAuctions() {
               myBidStatus = `<span class="absolute top-2 right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm z-10">已落後</span>`;
           }
       }
+
+      const unseenBadge = (!myBidStatus && isNewUnseen)
+        ? '<span class="absolute top-2 right-2 bg-sky-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-sm z-10">未睇過</span>'
+        : '';
+
+      const seenPill = isSeen
+        ? '<span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded"><i class="fa-regular fa-eye mr-0.5"></i>已睇過</span>'
+        : '';
 
       // 頂部橫向色帶 (置頂專用)
       const topRibbon = item.isPinned
