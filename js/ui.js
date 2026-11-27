@@ -159,7 +159,7 @@ function openUploadModal() {
   
   const endInput = document.getElementById('endTime');
   if (endInput) {
-    // 預設 2026年11月23日 22:00 HKT
+    // 預設 2026年11月30日 22:00 HKT
     const targetDate = new Date('2026-11-30T22:00:00+08:00');
     const localDate = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000));
     endInput.value = localDate.toISOString().slice(0, 16);
@@ -1514,7 +1514,7 @@ function addOpenBidCalendarReminder(itemTitle = '') {
   const shopUrl = 'https://onelittleshop.github.io/littleshop/?from=calendar';
   const details = `一間小店限時拍賣正式開標！0% 買家手續費，多款精選 $0 無底價起拍！\n立即入場搶頭香：${shopUrl}`;
 
-  // 2026-11-21 12:00 - 12:30 HKT => 20261127T140000Z - 20261127T143000Z
+  // 2026-11-27 22:00 - 22:30 HKT => 20261127T140000Z - 20261127T143000Z
   const startUtc = '20261127T140000Z';
   const endUtc = '20261127T143000Z';
 
